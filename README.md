@@ -50,6 +50,8 @@ flutter test integration_test/windows_flow_test.dart -d windows
 
 核心测试通过本地 HTTP 服务验证真实请求、编码、认证、超时、取消、响应截断、持久化、草稿恢复和历史隔离。界面测试覆盖 1440×800 / 1280×720、关闭保护、设置及帮助。Windows 集成测试使用临时数据目录验证实际桌面应用的完整流程。
 
+代码采用 Feature-first 轻量分层和 ChangeNotifier / Provider。工作区仓储统一管理不可变数据；页面状态按接口列表、编辑器、标签、历史和设置划分。目录、依赖规则及生命周期见 [ARCHITECTURE.md](ARCHITECTURE.md)。`flutter test` 同时运行分层导入检查和 Provider 生命周期测试。
+
 生成界面评审截图：
 
 ```powershell

@@ -1,0 +1,191 @@
+{
+  "version": 1,
+  "folders": [
+    {
+      "id": "module-legacy",
+      "name": "服务 A"
+    }
+  ],
+  "requests": [
+    {
+      "id": "request-legacy",
+      "name": "保存的接口",
+      "folderId": "module-legacy",
+      "method": "POST",
+      "url": "https://example.com/users?tag=a&tag=b",
+      "params": [
+        {
+          "id": "p1",
+          "name": "page",
+          "value": "2",
+          "description": "页码",
+          "enabled": true
+        },
+        {
+          "id": "p2",
+          "name": "disabled",
+          "value": "1",
+          "description": "",
+          "enabled": false
+        }
+      ],
+      "headers": [
+        {
+          "id": "h1",
+          "name": "X-Client",
+          "value": "旧版本",
+          "description": "custom",
+          "enabled": true
+        }
+      ],
+      "bodyType": "json",
+      "body": "{\n  \"name\": \"中文\"\n}",
+      "authType": "bearer",
+      "token": "local-token"
+    }
+  ],
+  "drafts": [
+    {
+      "id": "request-legacy",
+      "name": "未保存的名字",
+      "folderId": "module-legacy",
+      "method": "POST",
+      "url": "https://example.com/users?tag=a&tag=b",
+      "params": [
+        {
+          "id": "p1",
+          "name": "page",
+          "value": "2",
+          "description": "页码",
+          "enabled": true
+        },
+        {
+          "id": "p2",
+          "name": "disabled",
+          "value": "1",
+          "description": "",
+          "enabled": false
+        }
+      ],
+      "headers": [
+        {
+          "id": "h1",
+          "name": "X-Client",
+          "value": "旧版本",
+          "description": "custom",
+          "enabled": true
+        }
+      ],
+      "bodyType": "json",
+      "body": "{\"changed\":true}",
+      "authType": "bearer",
+      "token": "local-token"
+    }
+  ],
+  "history": [
+    {
+      "id": "history-timeout",
+      "request": {
+        "id": "request-legacy",
+        "name": "保存的接口",
+        "folderId": "module-legacy",
+        "method": "POST",
+        "url": "https://example.com/users?tag=a&tag=b",
+        "params": [
+          {
+            "id": "p1",
+            "name": "page",
+            "value": "2",
+            "description": "页码",
+            "enabled": true
+          },
+          {
+            "id": "p2",
+            "name": "disabled",
+            "value": "1",
+            "description": "",
+            "enabled": false
+          }
+        ],
+        "headers": [
+          {
+            "id": "h1",
+            "name": "X-Client",
+            "value": "旧版本",
+            "description": "custom",
+            "enabled": true
+          }
+        ],
+        "bodyType": "json",
+        "body": "{\n  \"name\": \"中文\"\n}",
+        "authType": "bearer",
+        "token": "local-token"
+      },
+      "response": {
+        "statusCode": null,
+        "reason": "",
+        "body": "",
+        "headers": {},
+        "elapsedMs": 30000,
+        "byteCount": 0,
+        "error": "请求超时（30 秒），请检查服务或调整超时设置。",
+        "cancelled": false,
+        "truncated": false
+      },
+      "time": "2026-11-03T01:30:00.000Z"
+    },
+    {
+      "id": "history-cancel",
+      "request": {
+        "id": "request-legacy",
+        "name": "保存的接口",
+        "folderId": "module-legacy",
+        "method": "POST",
+        "url": "https://example.com/users?tag=a&tag=b",
+        "params": [
+          {
+            "id": "p1",
+            "name": "page",
+            "value": "2",
+            "description": "页码",
+            "enabled": true
+          },
+          {
+            "id": "p2",
+            "name": "disabled",
+            "value": "1",
+            "description": "",
+            "enabled": false
+          }
+        ],
+        "headers": [
+          {
+            "id": "h1",
+            "name": "X-Client",
+            "value": "旧版本",
+            "description": "custom",
+            "enabled": true
+          }
+        ],
+        "bodyType": "json",
+        "body": "{\n  \"name\": \"中文\"\n}",
+        "authType": "bearer",
+        "token": "local-token"
+      },
+      "response": {
+        "statusCode": null,
+        "reason": "",
+        "body": "",
+        "headers": {},
+        "elapsedMs": 15,
+        "byteCount": 0,
+        "error": null,
+        "cancelled": true,
+        "truncated": false
+      },
+      "time": "2026-11-03T01:29:00.000Z"
+    }
+  ],
+  "activeId": "request-legacy",
+  "timeoutSeconds": 45
+}

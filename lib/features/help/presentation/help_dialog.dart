@@ -1,0 +1,80 @@
+import 'package:flutter/material.dart';
+
+import '../../../core/theme/app_theme.dart';
+
+Future<void> openHelp(BuildContext context) => showDialog<void>(
+  context: context,
+  builder: (context) => AlertDialog(
+    backgroundColor: Colors.white,
+    surfaceTintColor: Colors.transparent,
+    title: const Text(
+      '帮助文档',
+      style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+    ),
+    content: SizedBox(
+      width: 570,
+      height: 410,
+      child: ListView(
+        children: const [
+          _HelpItem(
+            '新建与组织接口',
+            '点击“新建 HTTP 接口”或侧栏加号创建请求。加号菜单也可新建文件夹；右键接口或文件夹可重命名、删除。搜索支持接口名称和 URL。',
+          ),
+          _HelpItem(
+            '编辑与发送',
+            '选择 HTTP 方法，填写完整的 http:// 或 https:// 地址。Params 和 Headers 使用启用勾选框；Params 中同名字段会覆盖地址里的查询参数。Body 支持 JSON 与原始文本，认证支持 Bearer Token。',
+          ),
+          _HelpItem(
+            '保存与草稿',
+            'Ctrl + S 保存当前接口。未保存内容会保留为本地草稿；关闭标签页或退出应用时，可以保存、放弃修改或取消关闭。发送请求不会自动保存接口定义。',
+          ),
+          _HelpItem(
+            '查看响应',
+            'Ctrl + Enter 发送当前请求，再次操作可取消。下方显示真实状态码、耗时、大小、正文和响应头。JSON 可格式化，非 JSON 保留原文。响应捕获上限为 2 MB，超出时明确提示截断。',
+          ),
+          _HelpItem(
+            '从历史继续调试',
+            '每次发送都会记录请求与结果，包括失败和取消。历史记录先以只读快照打开；点击“编辑并重发”生成独立草稿，原记录保持不变。',
+          ),
+          _HelpItem(
+            '本地使用',
+            '接口、草稿、认证信息与请求历史存放在本机数据目录。设置中可以调整超时或清空历史。关闭应用不会自动清空历史。',
+          ),
+        ],
+      ),
+    ),
+    actions: [
+      FilledButton(
+        onPressed: () => Navigator.pop(context),
+        child: const Text('知道了'),
+      ),
+    ],
+  ),
+);
+
+class _HelpItem extends StatelessWidget {
+  const _HelpItem(this.title, this.text);
+  final String title, text;
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.only(bottom: 22),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+        ),
+        const SizedBox(height: 7),
+        Text(
+          text,
+          style: const TextStyle(
+            fontSize: 12,
+            color: AppColors.muted,
+            height: 1.9,
+          ),
+        ),
+      ],
+    ),
+  );
+}

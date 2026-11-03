@@ -109,7 +109,7 @@ Microsoft YaHei and the Windows fallback stack serve Chinese UI text; Consolas s
 - Pale-blue selection with cobalt action and active-state cues.
 - Compact desktop controls, thin borders and readable code.
 
-Evidence: `lib/ui/theme.dart`, `common.dart`, `workspace_page.dart`, `request_editor.dart`, `history_detail.dart` and `dialogs.dart`; cross-checked against `.impeccable/review/native-editor.png`. `PRODUCT.md` and the surface contract supply the already-confirmed language and shell constraints. Values expressed as px in the portable frontmatter correspond to Flutter logical pixels, not physical Windows pixels. Component tokens describe observed defaults; Flutter Material 3 supplies inherited states where the app does not override them.
+Evidence: `lib/core/theme/app_theme.dart`, `lib/shared/widgets/`, `lib/layout/`, `lib/features/workspace/presentation/` and `lib/features/settings/presentation/`; cross-checked against `.impeccable/review/native-editor.png`. The architecture refactor preserves these visual values and interactions. `PRODUCT.md` and the surface contract supply the already-confirmed language and shell constraints. Values expressed as px in the portable frontmatter correspond to Flutter logical pixels, not physical Windows pixels. Component tokens describe observed defaults; Flutter Material 3 supplies inherited states where the app does not override them.
 
 ## Colors
 

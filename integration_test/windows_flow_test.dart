@@ -7,9 +7,12 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
-import 'package:weils_api/core/storage.dart';
-import 'package:weils_api/core/workspace_controller.dart';
-import 'package:weils_api/main.dart';
+import 'package:weils_api/features/workspace/data/data_sources/local_workspace_source.dart';
+
+import '../test/support/workspace_fixture.dart';
+
+import 'package:weils_api/app.dart';
+import 'package:weils_api/features/workspace/domain/entities/request_spec.dart';
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
@@ -36,8 +39,9 @@ void main() {
         );
         await request.response.close();
       });
-      final c = WorkspaceController(
-        storage: WorkspaceStorage(directory: directory),
+      final c = WorkspaceFixture(
+        nativeWindow: true,
+        storage: LocalWorkspaceSource(directory: directory),
       );
       await c.initialize();
       final key = GlobalKey();
@@ -67,7 +71,7 @@ void main() {
         await tester.pumpWidget(
           RepaintBoundary(
             key: key,
-            child: WeilsApp(controller: c),
+            child: WeilsApp(dependencies: c.dependencies),
           ),
         );
         await capture('native-home');
@@ -82,8 +86,8 @@ void main() {
           'http://127.0.0.1:${server.port}/users',
         );
         final original = c.active!;
-        final extra = c.newRequest()..name = '用户详情';
-        final extraLast = c.newRequest()..name = '更新用户';
+        final extra = c.create(RequestSpec(name: '用户详情'));
+        final extraLast = c.create(RequestSpec(name: '更新用户'));
         c.selectTab(original.id);
         await tester.pumpAndSettle();
         final originalTab = find.byKey(ValueKey('request-tab-${original.id}'));
@@ -111,8 +115,9 @@ void main() {
         expect(c.active, same(original));
         await capture('native-tabs-reordered');
         await c.flush();
-        final reordered = WorkspaceController(
-          storage: WorkspaceStorage(directory: directory),
+        final reordered = WorkspaceFixture(
+          nativeWindow: true,
+          storage: LocalWorkspaceSource(directory: directory),
         );
         await reordered.initialize();
         expect(reordered.drafts.map((r) => r.id), [
@@ -217,15 +222,16 @@ void main() {
           '历史重发草稿',
         );
         await c.flush();
-        final restored = WorkspaceController(
-          storage: WorkspaceStorage(directory: directory),
+        final restored = WorkspaceFixture(
+          nativeWindow: true,
+          storage: LocalWorkspaceSource(directory: directory),
         );
         await restored.initialize();
         expect(restored.requests.single.name, '本地集成测试');
         expect(restored.active!.name, '历史重发草稿');
         expect(restored.history.single.request.name, '本地集成测试');
         restored.dispose();
-        final sourceFile = c.storage.file;
+        final sourceFile = (c.storage as LocalWorkspaceSource).file;
         final originalData = await sourceFile.readAsString();
         final target = await Directory('${directory.path}/移动后的 数据').create();
         const windowChannel = MethodChannel('weils/window');
@@ -256,15 +262,16 @@ void main() {
           await tester.pump(const Duration(milliseconds: 100));
         }
         expect(find.text('保存设置'), findsNothing);
-        expect(c.storage.directory.path, await target.resolveSymbolicLinks());
+        expect(c.storage.directoryPath, await target.resolveSymbolicLinks());
         expect(await sourceFile.readAsString(), originalData);
-        final relocated = WorkspaceController(
-          storage: WorkspaceStorage(directory: directory),
+        final relocated = WorkspaceFixture(
+          nativeWindow: true,
+          storage: LocalWorkspaceSource(directory: directory),
         );
         try {
           await relocated.initialize();
           expect(
-            relocated.storage.directory.path,
+            relocated.storage.directoryPath,
             await target.resolveSymbolicLinks(),
           );
           expect(relocated.active!.name, '历史重发草稿');
