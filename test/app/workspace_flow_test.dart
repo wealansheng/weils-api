@@ -19,18 +19,22 @@ import 'package:weils_api/core/theme/app_theme.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   setUpAll(() async {
-    for (final item in [
-      ('Microsoft YaHei', 'C:/Windows/Fonts/msyh.ttc'),
-      ('Segoe UI', 'C:/Windows/Fonts/segoeui.ttf'),
-      ('Consolas', 'C:/Windows/Fonts/consola.ttf'),
-    ]) {
-      final file = File(item.$2);
-      if (await file.exists()) {
-        final loader = FontLoader(item.$1)
-          ..addFont(
-            Future.value(ByteData.sublistView(await file.readAsBytes())),
-          );
-        await loader.load();
+    // 系统字体只在截图（CAPTURE_UI）时加载：CI 上不存在 C:/Windows/Fonts，
+    // 若默认加载会让本地与 CI 的排版度量不一致，导致同一断言两端结果相反。
+    if (const bool.fromEnvironment('CAPTURE_UI')) {
+      for (final item in [
+        ('Microsoft YaHei', 'C:/Windows/Fonts/msyh.ttc'),
+        ('Segoe UI', 'C:/Windows/Fonts/segoeui.ttf'),
+        ('Consolas', 'C:/Windows/Fonts/consola.ttf'),
+      ]) {
+        final file = File(item.$2);
+        if (await file.exists()) {
+          final loader = FontLoader(item.$1)
+            ..addFont(
+              Future.value(ByteData.sublistView(await file.readAsBytes())),
+            );
+          await loader.load();
+        }
       }
     }
     final icons = FontLoader('MaterialIcons')
@@ -894,6 +898,16 @@ void main() {
     expect(c.timeoutSeconds, 45);
     await tester.tap(find.text('帮助文档'));
     await tester.pumpAndSettle();
+    // 帮助内容较长，最后一条在 720 高的窗口下需要滚动才能看到；
+    // ListView 是懒构建的，滚动前该条根本不在 widget 树里。
+    await tester.scrollUntilVisible(
+      find.text('从历史继续调试'),
+      120,
+      scrollable: find.descendant(
+        of: find.byType(AlertDialog),
+        matching: find.byType(Scrollable),
+      ),
+    );
     expect(find.text('从历史继续调试'), findsOneWidget);
     await tester.tap(find.text('知道了'));
     await tester.pumpAndSettle();
