@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../core/models.dart';
+import 'response_headers_table.dart';
 import 'theme.dart';
 
 class ApiMark extends StatelessWidget {
@@ -477,10 +478,9 @@ class _ResponsePaneState extends State<ResponsePane> {
                   subtitle: r.error ?? '编辑内容已保留，可以重新发送。',
                 )
               : _tab == 'Headers'
-              ? CodeView(
-                  text: r.headers.entries
-                      .map((e) => '${e.key}: ${e.value}')
-                      .join('\n'),
+              ? ResponseHeadersTable(
+                  key: const ValueKey('response-headers-table'),
+                  headers: r.headers,
                 )
               : r.body.isEmpty
               ? const EmptyMessage(

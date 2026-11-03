@@ -205,9 +205,13 @@ Selected rows use pale blue and retain their method text, rather than recoloring
 
 Response badges use semantic text on the same semantic color at 8% opacity, compact insets and the status radius. Status text is accompanied by elapsed time and captured size. JSON preview colors keys, strings and literals; plain text stays slate. Empty, running, error and cancelled states have their own text and Material icon. Code remains selectable and scrollable.
 
+Response Headers use a read-only name/value table in both the editor and history. The pale table header stays visible while rows scroll; thin horizontal and vertical rules align the columns. Names occupy 32% of the available width, clamped to 160–280px. Both cells use 12px code text with a 1.5 line-height, wrap long content and support text selection. The existing copy control copies every header, including rows outside the viewport. Empty responses show “暂无响应头”.
+
 ### Dialogs
 
 White modal surfaces use semibold 17–18px headings and ordinary UI text. Name-entry, dirty-close, settings and help dialogs share the button/field system. Recovery dialogs present real storage failures and preserve the retry/cancel choices; their existence does not add a new visual family.
+
+Settings shows a selectable, wrapping data-directory path in a shell-colored inset and an outlined folder button that opens the Windows folder picker. Selection is staged until “保存设置”; the helper explains copying data and retaining the original folder. Busy states disable conflicting actions and prevent dismissal, and failures stay inline with retry available. The content scrolls within short windows while the action buttons remain visible.
 
 ### Select menus
 

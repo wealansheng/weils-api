@@ -4,6 +4,7 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:weils_api/core/storage.dart';
@@ -189,10 +190,25 @@ void main() {
         expect(c.history.single.response.statusCode, 200);
         expect(c.history.single.response.body, contains('本地测试用户'));
         await capture('native-editor');
+        await tester.tap(find.text('Headers').last);
+        await tester.pumpAndSettle();
+        expect(
+          find.byKey(const ValueKey('response-headers-table')),
+          findsOneWidget,
+        );
+        expect(find.text('application/json; charset=utf-8'), findsOneWidget);
+        await capture('native-response-headers');
         await tester.tap(find.text('请求历史'));
         await tester.pumpAndSettle();
         expect(find.text('历史快照'), findsOneWidget);
         await capture('native-history');
+        await tester.tap(find.text('Headers').last);
+        await tester.pumpAndSettle();
+        expect(
+          find.byKey(const ValueKey('response-headers-table')),
+          findsOneWidget,
+        );
+        expect(find.text('application/json; charset=utf-8'), findsOneWidget);
         await tester.tap(find.byKey(const ValueKey('replay-history')));
         await tester.pumpAndSettle();
         expect(c.active!.id, isNot(c.history.single.request.id));
@@ -209,6 +225,54 @@ void main() {
         expect(restored.active!.name, '历史重发草稿');
         expect(restored.history.single.request.name, '本地集成测试');
         restored.dispose();
+        final sourceFile = c.storage.file;
+        final originalData = await sourceFile.readAsString();
+        final target = await Directory('${directory.path}/移动后的 数据').create();
+        const windowChannel = MethodChannel('weils/window');
+        tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          windowChannel,
+          (call) async {
+            expect(call.method, 'selectDirectory');
+            return target.path;
+          },
+        );
+        addTearDown(
+          () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+            windowChannel,
+            null,
+          ),
+        );
+        await tester.tap(find.text('设置'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const ValueKey('choose-data-directory')));
+        await tester.pumpAndSettle();
+        await capture('native-settings-directory');
+        await tester.tap(find.text('保存设置'));
+        for (
+          var i = 0;
+          i < 100 && find.text('保存设置').evaluate().isNotEmpty;
+          i++
+        ) {
+          await tester.pump(const Duration(milliseconds: 100));
+        }
+        expect(find.text('保存设置'), findsNothing);
+        expect(c.storage.directory.path, await target.resolveSymbolicLinks());
+        expect(await sourceFile.readAsString(), originalData);
+        final relocated = WorkspaceController(
+          storage: WorkspaceStorage(directory: directory),
+        );
+        try {
+          await relocated.initialize();
+          expect(
+            relocated.storage.directory.path,
+            await target.resolveSymbolicLinks(),
+          );
+          expect(relocated.active!.name, '历史重发草稿');
+          expect(relocated.requests.single.name, '本地集成测试');
+          expect(relocated.history.single.response.statusCode, 200);
+        } finally {
+          relocated.dispose();
+        }
         expect(tester.takeException(), isNull);
         await tester.pumpWidget(const SizedBox.shrink());
         await tester.pumpAndSettle();

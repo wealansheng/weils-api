@@ -22,6 +22,8 @@ class WorkspaceController extends ChangeNotifier {
   bool ready = false, historyMode = false, storageBlocked = false;
   bool _disposed = false;
   Timer? _saveTimer;
+  Future<bool>? _settingsChange;
+  String? settingsError;
   RequestOperation? _operation;
   bool get running => _operation != null;
   RequestSpec? get active => drafts.where((d) => d.id == activeId).firstOrNull;
@@ -107,6 +109,8 @@ class WorkspaceController extends ChangeNotifier {
 
   Future<bool> flush({bool discardDirtyDrafts = false}) async {
     _saveTimer?.cancel();
+    final pending = _settingsChange;
+    if (pending != null) await pending;
     if (storageBlocked) return false;
     try {
       final data = snapshot();
@@ -124,6 +128,42 @@ class WorkspaceController extends ChangeNotifier {
       _notify();
       return false;
     }
+  }
+
+  Future<bool> updateSettings({required int timeout, String? directoryPath}) {
+    if (_settingsChange != null) return _settingsChange!;
+    final operation = _updateSettings(timeout, directoryPath);
+    _settingsChange = operation;
+    return operation.whenComplete(() => _settingsChange = null);
+  }
+
+  Future<bool> _updateSettings(int timeout, String? directoryPath) async {
+    _saveTimer?.cancel();
+    settingsError = null;
+    if (storageBlocked) {
+      settingsError = '请先恢复本地数据，再更改设置。';
+      return false;
+    }
+    if (timeout < 1 || timeout > 300) {
+      settingsError = '请填写 1–300 之间的整数';
+      return false;
+    }
+    try {
+      final data = snapshot()..['timeoutSeconds'] = timeout;
+      if (directoryPath == null) {
+        await storage.write(data);
+      } else {
+        await storage.relocate(directoryPath, data);
+      }
+      timeoutSeconds = timeout;
+      _notify();
+      return true;
+    } on StorageLocationException catch (e) {
+      settingsError = e.message;
+    } catch (_) {
+      settingsError = '设置未能保存，请检查所选目录的访问权限和磁盘空间。原目录仍在使用。';
+    }
+    return false;
   }
 
   RequestSpec newRequest({String? folderId}) {

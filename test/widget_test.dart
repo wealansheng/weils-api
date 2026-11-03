@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:ui' as ui;
 
@@ -11,6 +12,7 @@ import 'package:weils_api/core/request_headers.dart';
 import 'package:weils_api/core/storage.dart';
 import 'package:weils_api/core/workspace_controller.dart';
 import 'package:weils_api/main.dart';
+import 'package:weils_api/ui/common.dart';
 import 'package:weils_api/ui/theme.dart';
 
 class MemoryStorage extends WorkspaceStorage {
@@ -36,6 +38,24 @@ class FailingStorage extends MemoryStorage {
   Future<void> write(Map<String, dynamic> data) async {
     if (failWrite) throw const FileSystemException('write blocked');
     await super.write(data);
+  }
+}
+
+class RelocatingMemoryStorage extends MemoryStorage {
+  String? selectedPath;
+  bool failRelocation = false;
+  int relocations = 0;
+  @override
+  Directory get directory =>
+      selectedPath == null ? super.directory : Directory(selectedPath!);
+  @override
+  Future<void> relocate(String path, Map<String, dynamic> data) async {
+    if (failRelocation) {
+      throw const StorageLocationException('所选目录已有工作区数据，请选择其他文件夹。');
+    }
+    await write(data);
+    selectedPath = path;
+    relocations++;
   }
 }
 
@@ -367,6 +387,133 @@ void main() {
     await tester.pumpAndSettle();
     expect(r.authType, 'bearer');
     expect(find.text('Token'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+    await tester.runAsync(c.flush);
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
+  for (final width in [1440.0, 1000.0]) {
+    testWidgets(
+      'response header table wraps, scrolls, copies and appears in history at $width',
+      (tester) async {
+        final c = await controller(tester);
+        final r = c.newRequest()..name = '响应头展示';
+        final longName = 'x-${'long-header-name-' * 6}';
+        final headers = {
+          'content-type': 'application/json; charset=utf-8',
+          longName: 'test-value',
+          'set-cookie':
+              'session=example; HttpOnly; SameSite=Lax\nlocale=zh-CN; Path=/',
+          'cache-control':
+              'private, no-cache, max-age=0, must-revalidate; ' * 8,
+          'x-empty': '',
+          for (var i = 0; i < 30; i++) 'x-debug-$i': 'value-$i',
+        };
+        final response = ResponseRecord(
+          statusCode: 200,
+          reason: 'OK',
+          headers: headers,
+        );
+        c.responses[r.id] = response;
+        c.history.add(HistoryRecord(request: r.copy(), response: response));
+        final key = GlobalKey();
+        await show(tester, c, key, Size(width, 720));
+        Future<void> showHeaders() async {
+          await tester.tap(
+            find.descendant(
+              of: find.byType(ResponsePane),
+              matching: find.text('Headers'),
+            ),
+          );
+          await tester.pumpAndSettle();
+        }
+
+        await showHeaders();
+        final table = find.byKey(const ValueKey('response-headers-table'));
+        expect(table, findsOneWidget);
+        expect(
+          find.descendant(of: table, matching: find.text('名称')),
+          findsOneWidget,
+        );
+        expect(
+          find.descendant(of: table, matching: find.text('值')),
+          findsOneWidget,
+        );
+        expect(find.text(headers['content-type']!), findsOneWidget);
+        final longNameRect = tester.getRect(
+          find.byKey(ValueKey('response-header-name-$longName')),
+        );
+        expect(longNameRect.height, greaterThan(18));
+        expect(tester.takeException(), isNull);
+        await capture(tester, key, 'response-headers-${width.toInt()}');
+        final headingPosition = tester.getTopLeft(
+          find.descendant(of: table, matching: find.text('名称')),
+        );
+        await tester.drag(
+          find.byKey(const ValueKey('response-headers-rows')),
+          const Offset(0, -2500),
+        );
+        await tester.pumpAndSettle();
+        final last = find.byKey(
+          const ValueKey('response-header-value-x-debug-29'),
+        );
+        expect(last.hitTestable(), findsOneWidget);
+        expect(
+          tester.getTopLeft(
+            find.descendant(of: table, matching: find.text('名称')),
+          ),
+          headingPosition,
+        );
+        var copied = '';
+        tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          SystemChannels.platform,
+          (call) async {
+            if (call.method == 'Clipboard.setData') {
+              copied = (call.arguments as Map)['text'] as String;
+            }
+            return null;
+          },
+        );
+        addTearDown(
+          () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+            SystemChannels.platform,
+            null,
+          ),
+        );
+        await tester.tap(find.byTooltip('复制响应'));
+        await tester.pumpAndSettle();
+        expect(
+          copied,
+          headers.entries.map((e) => '${e.key}: ${e.value}').join('\n'),
+        );
+        await tester.tap(find.text('请求历史'));
+        await tester.pumpAndSettle();
+        await showHeaders();
+        expect(table, findsOneWidget);
+        expect(find.text(headers['content-type']!), findsOneWidget);
+        expect(response.headers, headers);
+        expect(tester.takeException(), isNull);
+        await tester.runAsync(c.flush);
+        await tester.pumpWidget(const SizedBox.shrink());
+      },
+    );
+  }
+
+  testWidgets('empty response headers have an explicit empty state', (
+    tester,
+  ) async {
+    final c = await controller(tester);
+    final r = c.newRequest();
+    c.responses[r.id] = ResponseRecord(statusCode: 204, reason: 'No Content');
+    await show(tester, c, GlobalKey(), const Size(1000, 650));
+    await tester.tap(
+      find.descendant(
+        of: find.byType(ResponsePane),
+        matching: find.text('Headers'),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('暂无响应头'), findsOneWidget);
     expect(tester.takeException(), isNull);
     await tester.runAsync(c.flush);
     await tester.pumpWidget(const SizedBox.shrink());
@@ -788,4 +935,144 @@ void main() {
     expect(tester.takeException(), isNull);
     await tester.pumpWidget(const SizedBox.shrink());
   });
+
+  for (final width in [1440.0, 1000.0]) {
+    testWidgets(
+      'settings stages folder selection and commits only on save at $width',
+      (tester) async {
+        final storage = RelocatingMemoryStorage();
+        final c = WorkspaceController(storage: storage);
+        await c.initialize();
+        addTearDown(c.dispose);
+        c.newRequest().name = '保留的接口';
+        final key = GlobalKey();
+        await show(tester, c, key, Size(width, width == 1000 ? 650 : 800));
+        const channel = MethodChannel('weils/window');
+        final pending = Completer<String?>();
+        var pickerCalls = 0;
+        const selected = r'C:\开发资料\接口调试工具\个人项目\工作区数据';
+        tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          channel,
+          (call) async {
+            expect(call.method, 'selectDirectory');
+            expect(call.arguments, storage.directory.path);
+            pickerCalls++;
+            if (pickerCalls == 1) return await pending.future;
+            return selected;
+          },
+        );
+        addTearDown(
+          () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+            channel,
+            null,
+          ),
+        );
+        await tester.tap(find.text('设置'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const ValueKey('choose-data-directory')));
+        await tester.pump();
+        expect(find.text('选择中…'), findsOneWidget);
+        await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+        await tester.pumpAndSettle();
+        expect(find.text('保存设置'), findsOneWidget);
+        pending.complete(null);
+        await tester.pumpAndSettle();
+        expect(
+          tester
+              .widget<SelectableText>(
+                find.byKey(const ValueKey('data-directory-path')),
+              )
+              .data,
+          storage.directory.path,
+        );
+        await tester.tap(find.byKey(const ValueKey('choose-data-directory')));
+        await tester.pumpAndSettle();
+        expect(
+          tester
+              .widget<SelectableText>(
+                find.byKey(const ValueKey('data-directory-path')),
+              )
+              .data,
+          selected,
+        );
+        expect(storage.relocations, 0);
+        await capture(tester, key, 'settings-directory-${width.toInt()}');
+        await tester.tap(find.text('取消'));
+        await tester.pumpAndSettle();
+        expect(storage.relocations, 0);
+        await tester.tap(find.text('设置'));
+        await tester.pumpAndSettle();
+        expect(
+          tester
+              .widget<SelectableText>(
+                find.byKey(const ValueKey('data-directory-path')),
+              )
+              .data,
+          storage.directory.path,
+        );
+        await tester.tap(find.byKey(const ValueKey('choose-data-directory')));
+        await tester.pumpAndSettle();
+        await tester.enterText(find.byType(TextFormField), '45');
+        await tester.tap(find.text('保存设置'));
+        await tester.pumpAndSettle();
+        expect(find.text('保存设置'), findsNothing);
+        expect(storage.directory.path, selected);
+        expect(storage.relocations, 1);
+        expect(c.timeoutSeconds, 45);
+        expect(storage.data!['drafts'][0]['name'], '保留的接口');
+        expect(tester.takeException(), isNull);
+        await tester.runAsync(c.flush);
+        await tester.pumpWidget(const SizedBox.shrink());
+      },
+    );
+  }
+
+  testWidgets(
+    'directory picker and migration failures remain recoverable in settings',
+    (tester) async {
+      final storage = RelocatingMemoryStorage()..failRelocation = true;
+      final c = WorkspaceController(storage: storage);
+      await c.initialize();
+      addTearDown(c.dispose);
+      final key = GlobalKey();
+      await show(tester, c, key, const Size(1000, 650));
+      var pickerFails = true;
+      const channel = MethodChannel('weils/window');
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(channel, (
+        call,
+      ) async {
+        if (pickerFails) throw PlatformException(code: 'directory_picker');
+        return r'D:\工作区数据';
+      });
+      addTearDown(
+        () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          channel,
+          null,
+        ),
+      );
+      await tester.tap(find.text('设置'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('choose-data-directory')));
+      await tester.pumpAndSettle();
+      expect(find.text('无法打开目录选择器，请重试。'), findsOneWidget);
+      pickerFails = false;
+      await tester.tap(find.byKey(const ValueKey('choose-data-directory')));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextFormField), '70');
+      await tester.tap(find.text('保存设置'));
+      await tester.pumpAndSettle();
+      expect(find.text('所选目录已有工作区数据，请选择其他文件夹。'), findsOneWidget);
+      expect(storage.relocations, 0);
+      expect(c.timeoutSeconds, 30);
+      await capture(tester, key, 'settings-directory-error');
+      storage.failRelocation = false;
+      await tester.tap(find.text('保存设置'));
+      await tester.pumpAndSettle();
+      expect(storage.directory.path, r'D:\工作区数据');
+      expect(c.timeoutSeconds, 70);
+      expect(find.text('保存设置'), findsNothing);
+      expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox.shrink());
+    },
+  );
 }

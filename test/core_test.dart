@@ -378,6 +378,168 @@ void main() {
   );
 
   test(
+    'changing data directory preserves current workspace and restart location',
+    () async {
+      final draft = c.newRequest()..name = '保存的接口';
+      await c.save(draft);
+      draft.body = '尚未保存的正文';
+      final response = ResponseRecord(statusCode: 200, body: 'history body');
+      c.history.add(HistoryRecord(request: draft.copy(), response: response));
+      await c.flush();
+      final original = c.storage.file;
+      final before = await original.readAsString();
+      final target = await Directory('${directory.path}/新的 数据目录').create();
+      expect(
+        await c.updateSettings(timeout: 45, directoryPath: target.path),
+        isTrue,
+      );
+      expect(c.storage.directory.path, await target.resolveSymbolicLinks());
+      expect(await original.readAsString(), before);
+      final restored = WorkspaceController(
+        storage: WorkspaceStorage(directory: directory),
+      );
+      try {
+        await restored.initialize();
+        expect(restored.storageBlocked, isFalse);
+        expect(
+          restored.storage.directory.path,
+          await target.resolveSymbolicLinks(),
+        );
+        expect(restored.timeoutSeconds, 45);
+        expect(restored.requests.single.body, isEmpty);
+        expect(restored.active!.body, '尚未保存的正文');
+        expect(restored.history.single.response.body, 'history body');
+        restored.active!.name = '切换后的修改';
+        await restored.flush();
+        expect((await c.storage.read())!['drafts'][0]['name'], '切换后的修改');
+        expect(await original.readAsString(), before);
+      } finally {
+        restored.dispose();
+      }
+    },
+  );
+
+  for (final suffix in ['', '.bak']) {
+    test('existing destination workspace$suffix is never replaced', () async {
+      c.newRequest().name = '源工作区';
+      await c.flush();
+      final original = await c.storage.file.readAsString();
+      final target = await Directory('${directory.path}/occupied').create();
+      final occupied = File('${target.path}/workspace.json$suffix');
+      await occupied.writeAsString('keep this exact content');
+      expect(
+        await c.updateSettings(timeout: 80, directoryPath: target.path),
+        isFalse,
+      );
+      expect(c.settingsError, contains('已有工作区'));
+      expect(c.timeoutSeconds, 30);
+      expect(c.storage.directory.path, directory.path);
+      expect(await occupied.readAsString(), 'keep this exact content');
+      expect(await c.storage.file.readAsString(), original);
+      expect(await c.storage.locationFile.exists(), isFalse);
+    });
+  }
+
+  test('location pointer failure rolls back new data and retains original settings', () async {
+    final location = File('${directory.path}/config/location.json');
+    final local = WorkspaceController(
+      storage: WorkspaceStorage(directory: directory, locationFile: location),
+    );
+    try {
+      await local.initialize();
+      local.newRequest().name = '保留的接口';
+      await local.flush();
+      final source = local.storage.file;
+      final before = await source.readAsString();
+      await File('${directory.path}/config')
+          .writeAsString('blocks config directory');
+      final target = await Directory('${directory.path}/destination').create();
+      expect(
+        await local.updateSettings(timeout: 60, directoryPath: target.path),
+        isFalse,
+      );
+      expect(local.storage.directory.path, directory.path);
+      expect(local.timeoutSeconds, 30);
+      expect(await source.readAsString(), before);
+      expect(await File('${target.path}/workspace.json').exists(), isFalse);
+      local.active!.name = '继续保存';
+      expect(await local.flush(), isTrue);
+      expect((await local.storage.read())!['drafts'][0]['name'], '继续保存');
+    } finally {
+      local.dispose();
+    }
+  });
+
+  test('a file cannot be selected as the data directory', () async {
+    final target = File('${directory.path}/ordinary-file');
+    await target.writeAsString('unchanged');
+    expect(
+      await c.updateSettings(timeout: 60, directoryPath: target.path),
+      isFalse,
+    );
+    expect(c.settingsError, contains('文件夹不存在'));
+    expect(c.timeoutSeconds, 30);
+    expect(await target.readAsString(), 'unchanged');
+  });
+
+  test(
+    'queued saves during relocation use the committed directory and timeout',
+    () async {
+      final draft = c.newRequest()..name = 'before migration';
+      await c.flush();
+      final target = await Directory('${directory.path}/queued-destination')
+          .create();
+      final migration = c.updateSettings(
+        timeout: 55,
+        directoryPath: target.path,
+      );
+      draft.name = 'updated while saving settings';
+      c.changed();
+      final flush = c.flush();
+      expect(await migration, isTrue);
+      expect(await flush, isTrue);
+      final data = await c.storage.read();
+      expect(data!['timeoutSeconds'], 55);
+      expect(data['drafts'][0]['name'], 'updated while saving settings');
+    },
+  );
+
+  test('selecting the current directory updates settings without migration conflict', () async {
+    c.newRequest();
+    await c.flush();
+    expect(
+      await c.updateSettings(timeout: 75, directoryPath: '${directory.path}/.'),
+      isTrue,
+    );
+    expect(c.timeoutSeconds, 75);
+    expect((await c.storage.read())!['timeoutSeconds'], 75);
+  });
+
+  test('missing selected directory blocks startup instead of falling back and overwriting', () async {
+    c.newRequest().name = '原始数据';
+    await c.flush();
+    final source = c.storage.file;
+    final original = await source.readAsString();
+    final target = await Directory('${directory.path}/selected').create();
+    expect(
+      await c.updateSettings(timeout: 40, directoryPath: target.path),
+      isTrue,
+    );
+    await target.rename('${directory.path}/selected-moved');
+    final restored = WorkspaceController(
+      storage: WorkspaceStorage(directory: directory),
+    );
+    try {
+      await restored.initialize();
+      expect(restored.storageBlocked, isTrue);
+      expect(await restored.flush(), isFalse);
+      expect(await source.readAsString(), original);
+    } finally {
+      restored.dispose();
+    }
+  });
+
+  test(
     'persistence failure rolls back saved marker and leaves draft editable',
     () async {
       c.dispose();

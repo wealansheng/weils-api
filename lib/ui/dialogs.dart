@@ -99,6 +99,7 @@ Future<bool> confirmAction(
 Future<void> openSettings(BuildContext context, WorkspaceController c) =>
     showDialog<void>(
       context: context,
+      barrierDismissible: false,
       builder: (context) => _SettingsDialog(controller: c),
     );
 
@@ -113,6 +114,30 @@ class _SettingsDialogState extends State<_SettingsDialog> {
   late final TextEditingController _timeout;
   final _form = GlobalKey<FormState>();
   bool _saving = false;
+  bool _choosing = false;
+  String? _selectedDirectory, _error;
+
+  Future<void> _chooseDirectory() async {
+    setState(() {
+      _choosing = true;
+      _error = null;
+    });
+    try {
+      final path = await const MethodChannel('weils/window')
+          .invokeMethod<String>(
+            'selectDirectory',
+            _selectedDirectory ?? widget.controller.storage.directory.path,
+          );
+      if (mounted && path != null && path.isNotEmpty) {
+        setState(() => _selectedDirectory = path);
+      }
+    } catch (_) {
+      if (mounted) setState(() => _error = '无法打开目录选择器，请重试。');
+    } finally {
+      if (mounted) setState(() => _choosing = false);
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -128,124 +153,192 @@ class _SettingsDialogState extends State<_SettingsDialog> {
   }
 
   @override
-  Widget build(BuildContext context) => AlertDialog(
-    backgroundColor: Colors.white,
-    surfaceTintColor: Colors.transparent,
-    title: const Text(
-      '设置',
-      style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
-    ),
-    content: SizedBox(
-      width: 420,
-      child: Form(
-        key: _form,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text('请求超时', style: TextStyle(fontWeight: FontWeight.w600)),
-            const SizedBox(height: 10),
-            TextFormField(
-              controller: _timeout,
-              keyboardType: TextInputType.number,
-              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-              decoration: const InputDecoration(
-                suffixText: '秒',
-                helperText: '1–300 秒，适用于下一次发送的请求',
-              ),
-              validator: (v) {
-                final n = int.tryParse(v ?? '');
-                return n == null || n < 1 || n > 300 ? '请填写 1–300 之间的整数' : null;
-              },
-            ),
-            const SizedBox(height: 24),
-            const Divider(),
-            const SizedBox(height: 16),
-            Row(
+  Widget build(BuildContext context) => PopScope(
+    canPop: !_saving && !_choosing,
+    child: AlertDialog(
+      backgroundColor: Colors.white,
+      surfaceTintColor: Colors.transparent,
+      title: const Text(
+        '设置',
+        style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+      ),
+      content: SizedBox(
+        width: 420,
+        child: SingleChildScrollView(
+          child: Form(
+            key: _form,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '请求历史',
+                const Text(
+                  '请求超时',
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(height: 10),
+                TextFormField(
+                  enabled: !_saving && !_choosing,
+                  controller: _timeout,
+                  keyboardType: TextInputType.number,
+                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                  decoration: const InputDecoration(
+                    suffixText: '秒',
+                    helperText: '1–300 秒，适用于下一次发送的请求',
+                  ),
+                  validator: (v) {
+                    final n = int.tryParse(v ?? '');
+                    return n == null || n < 1 || n > 300
+                        ? '请填写 1–300 之间的整数'
+                        : null;
+                  },
+                ),
+                const SizedBox(height: 24),
+                const Divider(),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    const Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '请求历史',
+                            style: TextStyle(fontWeight: FontWeight.w600),
+                          ),
+                          SizedBox(height: 5),
+                          Text(
+                            '清空记录不会删除已保存的接口。',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: AppColors.muted,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    OutlinedButton(
+                      onPressed: _saving || _choosing
+                          ? null
+                          : () async {
+                              final confirmed = await confirmAction(
+                                context,
+                                title: '清空请求历史？',
+                                detail: '将删除本机全部请求历史与响应快照，此操作无法撤销。',
+                                action: '清空历史',
+                              );
+                              if (confirmed) {
+                                final ok = await widget.controller
+                                    .clearHistory();
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        ok ? '请求历史已清空' : '清空失败，原记录已保留',
+                                      ),
+                                    ),
+                                  );
+                                }
+                              }
+                            },
+                      child: const Text('清空历史'),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 22),
+                Row(
+                  children: [
+                    const Expanded(
+                      child: Text(
+                        '本地数据目录',
                         style: TextStyle(fontWeight: FontWeight.w600),
                       ),
-                      SizedBox(height: 5),
-                      Text(
-                        '清空记录不会删除已保存的接口。',
-                        style: TextStyle(fontSize: 12, color: AppColors.muted),
-                      ),
-                    ],
+                    ),
+                    OutlinedButton.icon(
+                      key: const ValueKey('choose-data-directory'),
+                      onPressed: _saving || _choosing ? null : _chooseDirectory,
+                      icon: const Icon(Icons.folder_open_outlined, size: 16),
+                      label: Text(_choosing ? '选择中…' : '更改目录'),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: AppColors.shell,
+                    border: Border.all(color: AppColors.line),
+                    borderRadius: BorderRadius.circular(7),
+                  ),
+                  child: SelectableText(
+                    _selectedDirectory ??
+                        widget.controller.storage.directory.path,
+                    key: const ValueKey('data-directory-path'),
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: AppColors.ink,
+                      height: 1.6,
+                    ),
                   ),
                 ),
-                OutlinedButton(
-                  onPressed: () async {
-                    final confirmed = await confirmAction(
-                      context,
-                      title: '清空请求历史？',
-                      detail: '将删除本机全部请求历史与响应快照，此操作无法撤销。',
-                      action: '清空历史',
-                    );
-                    if (confirmed) {
-                      final ok = await widget.controller.clearHistory();
-                      if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(ok ? '请求历史已清空' : '清空失败，原记录已保留'),
-                          ),
-                        );
-                      }
-                    }
-                  },
-                  child: const Text('清空历史'),
+                const SizedBox(height: 8),
+                const Text(
+                  '保存设置后，现有数据将复制到新目录，原目录保留。请选择未存放工作区数据的文件夹。',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: AppColors.muted,
+                    height: 1.6,
+                  ),
                 ),
+                if (_error != null) ...[
+                  const SizedBox(height: 12),
+                  Text(
+                    _error!,
+                    key: const ValueKey('settings-error'),
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: AppColors.red,
+                      height: 1.6,
+                    ),
+                  ),
+                ],
               ],
             ),
-            const SizedBox(height: 22),
-            const Text(
-              '本地数据目录',
-              style: TextStyle(fontSize: 12, color: AppColors.muted),
-            ),
-            const SizedBox(height: 6),
-            SelectableText(
-              widget.controller.storage.directory.path,
-              style: const TextStyle(
-                fontSize: 11,
-                color: AppColors.muted,
-                height: 1.6,
-              ),
-            ),
-          ],
+          ),
         ),
       ),
-    ),
-    actions: [
-      TextButton(
-        onPressed: _saving ? null : () => Navigator.pop(context),
-        child: const Text('取消'),
-      ),
-      FilledButton(
-        onPressed: _saving
-            ? null
-            : () async {
-                if (!_form.currentState!.validate()) return;
-                setState(() => _saving = true);
-                final previous = widget.controller.timeoutSeconds;
-                widget.controller.timeoutSeconds = int.parse(_timeout.text);
-                final ok = await widget.controller.flush();
-                if (!ok) widget.controller.timeoutSeconds = previous;
-                if (context.mounted) {
-                  if (ok) {
-                    Navigator.pop(context);
-                  } else {
-                    setState(() => _saving = false);
+      actions: [
+        TextButton(
+          onPressed: _saving || _choosing ? null : () => Navigator.pop(context),
+          child: const Text('取消'),
+        ),
+        FilledButton(
+          onPressed: _saving || _choosing
+              ? null
+              : () async {
+                  if (!_form.currentState!.validate()) return;
+                  setState(() {
+                    _saving = true;
+                    _error = null;
+                  });
+                  final ok = await widget.controller.updateSettings(
+                    timeout: int.parse(_timeout.text),
+                    directoryPath: _selectedDirectory,
+                  );
+                  if (context.mounted) {
+                    setState(() {
+                      _saving = false;
+                      _error = widget.controller.settingsError;
+                    });
+                    if (ok) {
+                      Navigator.pop(context);
+                    }
                   }
-                }
-              },
-        child: Text(_saving ? '保存中…' : '保存设置'),
-      ),
-    ],
+                },
+          child: Text(_saving ? '保存中…' : '保存设置'),
+        ),
+      ],
+    ),
   );
 }
 

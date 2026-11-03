@@ -2,8 +2,11 @@
 
 #include <optional>
 #include <flutter/standard_method_codec.h>
+#include <shobjidl.h>
+#include <wrl/client.h>
 
 #include "flutter/generated_plugin_registrant.h"
+#include "utils.h"
 
 FlutterWindow::FlutterWindow(const flutter::DartProject& project)
     : project_(project) {}
@@ -36,6 +39,52 @@ bool FlutterWindow::OnCreate() {
           allow_close_ = true;
           result->Success();
           PostMessage(GetHandle(), WM_CLOSE, 0, 0);
+        } else if (call.method_name() == "selectDirectory") {
+          Microsoft::WRL::ComPtr<IFileOpenDialog> dialog;
+          HRESULT hr = CoCreateInstance(CLSID_FileOpenDialog, nullptr,
+              CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&dialog));
+          FILEOPENDIALOGOPTIONS options = 0;
+          if (SUCCEEDED(hr)) hr = dialog->GetOptions(&options);
+          if (SUCCEEDED(hr)) hr = dialog->SetOptions(options | FOS_PICKFOLDERS |
+              FOS_FORCEFILESYSTEM | FOS_PATHMUSTEXIST | FOS_NOCHANGEDIR);
+          if (SUCCEEDED(hr)) {
+            dialog->SetTitle(L"\u9009\u62e9\u6570\u636e\u4fdd\u5b58\u76ee\u5f55");
+            dialog->SetOkButtonLabel(L"\u9009\u62e9\u6b64\u6587\u4ef6\u5939");
+            const auto* initial = call.arguments()
+                ? std::get_if<std::string>(call.arguments()) : nullptr;
+            if (initial && !initial->empty()) {
+              const int length = MultiByteToWideChar(CP_UTF8, 0,
+                  initial->c_str(), -1, nullptr, 0);
+              std::wstring folder(length, L'\0');
+              MultiByteToWideChar(CP_UTF8, 0, initial->c_str(), -1,
+                  folder.data(), length);
+              Microsoft::WRL::ComPtr<IShellItem> item;
+              if (SUCCEEDED(SHCreateItemFromParsingName(folder.c_str(), nullptr,
+                  IID_PPV_ARGS(&item)))) dialog->SetFolder(item.Get());
+            }
+            hr = dialog->Show(GetHandle());
+          }
+          if (hr == HRESULT_FROM_WIN32(ERROR_CANCELLED)) {
+            result->Success();
+          } else if (SUCCEEDED(hr)) {
+            Microsoft::WRL::ComPtr<IShellItem> item;
+            hr = dialog->GetResult(&item);
+            PWSTR path = nullptr;
+            if (SUCCEEDED(hr)) hr = item->GetDisplayName(SIGDN_FILESYSPATH, &path);
+            if (SUCCEEDED(hr)) {
+              const std::string selected = Utf8FromUtf16(path);
+              CoTaskMemFree(path);
+              if (selected.empty()) {
+                result->Error("directory_picker", "Unable to read selected folder");
+              } else {
+                result->Success(flutter::EncodableValue(selected));
+              }
+            } else {
+              result->Error("directory_picker", "Unable to read selected folder");
+            }
+          } else {
+            result->Error("directory_picker", "Unable to open folder picker");
+          }
         } else {
           result->NotImplemented();
         }
