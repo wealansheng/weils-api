@@ -75,6 +75,50 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
 
+  # 集成测试需要真实的 Windows 桌面与文件系统，ubuntu 上跑不了。
+  # 暂设为 continue-on-error：失败只告警，不阻断 dev → main 的自动合并。
+  # 等它稳定后再去掉这一行、并把它加进 merge 的 needs。
+  windows-integration:
+    name: Windows integration test
+    runs-on: windows-latest
+    timeout-minutes: 40
+    continue-on-error: true
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: ${{ env.FLUTTER_CHANNEL }}
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      # 仅用于确认 runner 上是否真的存在中文字体（本仓库测试不依赖它）
+      - name: Report CJK font availability
+        shell: pwsh
+        run: |
+          foreach ($f in 'msyh.ttc', 'segoeui.ttf', 'consola.ttf') {
+            $path = Join-Path $env:WINDIR "Fonts\$f"
+            Write-Host "$f exists: $(Test-Path -LiteralPath $path)"
+          }
+
+      - name: Run Windows integration test
+        run: flutter test integration_test/windows_flow_test.dart -d windows --dart-define=REVIEW_DIR=build/review
+
+      - name: Upload integration screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-integration-screenshots
+          path: build/review
+          if-no-files-found: ignore
+          retention-days: 7
+
   merge:
     name: Merge dev into main
     # 必须等 analyze + test 都通过；任一失败则本 job 直接跳过，main 不动
