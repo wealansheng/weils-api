@@ -1,0 +1,622 @@
+import 'package:flutter/material.dart';
+
+import '../core/models.dart';
+import '../core/workspace_controller.dart';
+import 'common.dart';
+import 'theme.dart';
+
+class RequestEditor extends StatefulWidget {
+  const RequestEditor({
+    super.key,
+    required this.controller,
+    required this.request,
+    required this.onSave,
+  });
+  final WorkspaceController controller;
+  final RequestSpec request;
+  final VoidCallback onSave;
+  @override
+  State<RequestEditor> createState() => _RequestEditorState();
+}
+
+class _RequestEditorState extends State<RequestEditor> {
+  late final TextEditingController _name, _url, _body, _token;
+  String _tab = 'Params';
+  double? _requestHeight;
+  WorkspaceController get c => widget.controller;
+  RequestSpec get r => widget.request;
+  @override
+  void initState() {
+    super.initState();
+    _name = TextEditingController(text: r.name);
+    _url = TextEditingController(text: r.url);
+    _body = TextEditingController(text: r.body);
+    _token = TextEditingController(text: r.token);
+  }
+
+  @override
+  void dispose() {
+    _name.dispose();
+    _url.dispose();
+    _body.dispose();
+    _token.dispose();
+    super.dispose();
+  }
+
+  @override
+  void didUpdateWidget(RequestEditor old) {
+    super.didUpdateWidget(old);
+    if (_name.text != r.name) _name.text = r.name;
+  }
+
+  @override
+  Widget build(BuildContext context) => Column(
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
+      Padding(
+        padding: const EdgeInsets.fromLTRB(20, 12, 20, 10),
+        child: Row(
+          children: [
+            Expanded(
+              child: SizedBox(
+                width: 240,
+                height: 34,
+                child: TextField(
+                  key: const ValueKey('request-name'),
+                  controller: _name,
+                  style: const TextStyle(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  decoration: const InputDecoration(
+                    hintText: '接口名称',
+                    border: InputBorder.none,
+                    enabledBorder: InputBorder.none,
+                    focusedBorder: UnderlineInputBorder(
+                      borderSide: BorderSide(color: AppColors.primary),
+                    ),
+                    contentPadding: EdgeInsets.symmetric(vertical: 7),
+                  ),
+                  onChanged: (v) {
+                    r.name = v;
+                    c.changed();
+                  },
+                ),
+              ),
+            ),
+            if (c.isDirty(r))
+              const Padding(
+                padding: EdgeInsets.only(left: 8),
+                child: Text(
+                  '未保存',
+                  style: TextStyle(fontSize: 11, color: AppColors.muted),
+                ),
+              ),
+            const Spacer(),
+            Icon(Icons.folder_outlined, size: 15, color: AppColors.muted),
+            const SizedBox(width: 5),
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 130),
+              child: DropdownButtonHideUnderline(
+                child: DropdownButton<String>(
+                  value: r.folderId,
+                  isDense: true,
+                  style: const TextStyle(
+                    fontFamily: 'Microsoft YaHei',
+                    fontSize: 12,
+                    color: AppColors.muted,
+                  ),
+                  items: c.folders
+                      .map(
+                        (f) => DropdownMenuItem(
+                          value: f.id,
+                          child: Text(f.name, overflow: TextOverflow.ellipsis),
+                        ),
+                      )
+                      .toList(),
+                  onChanged: (v) {
+                    if (v != null) {
+                      r.folderId = v;
+                      c.changed();
+                    }
+                  },
+                ),
+              ),
+            ),
+            const SizedBox(width: 16),
+            Tooltip(
+              message: '保存接口 · Ctrl + S',
+              child: OutlinedButton(
+                onPressed: widget.onSave,
+                child: const Text('保存'),
+              ),
+            ),
+          ],
+        ),
+      ),
+      Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        child: SizedBox(
+          height: 40,
+          child: Row(
+            children: [
+              Expanded(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    border: Border.all(color: AppColors.line),
+                    borderRadius: BorderRadius.circular(7),
+                  ),
+                  child: Row(
+                    children: [
+                      SizedBox(
+                        width: 105,
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 13),
+                          child: DropdownButtonHideUnderline(
+                            child: DropdownButton<String>(
+                              value: r.method,
+                              isExpanded: true,
+                              icon: const Icon(Icons.expand_more, size: 17),
+                              style: TextStyle(
+                                fontFamily: 'Consolas',
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: methodColor(r.method),
+                              ),
+                              items:
+                                  [
+                                        'GET',
+                                        'POST',
+                                        'PUT',
+                                        'PATCH',
+                                        'DELETE',
+                                        'HEAD',
+                                        'OPTIONS',
+                                      ]
+                                      .map(
+                                        (m) => DropdownMenuItem(
+                                          value: m,
+                                          child: Text(m),
+                                        ),
+                                      )
+                                      .toList(),
+                              onChanged: (v) {
+                                if (v != null) {
+                                  r.method = v;
+                                  c.changed();
+                                }
+                              },
+                            ),
+                          ),
+                        ),
+                      ),
+                      Container(width: 1, height: 24, color: AppColors.line),
+                      Expanded(
+                        child: TextField(
+                          key: const ValueKey('request-url'),
+                          controller: _url,
+                          style: codeStyle.copyWith(height: 1.2),
+                          decoration: const InputDecoration(
+                            hintText: 'https://api.example.com/users',
+                            filled: false,
+                            border: InputBorder.none,
+                            enabledBorder: InputBorder.none,
+                            focusedBorder: InputBorder.none,
+                            contentPadding: EdgeInsets.symmetric(
+                              horizontal: 13,
+                              vertical: 12,
+                            ),
+                          ),
+                          onChanged: (v) {
+                            r.url = v;
+                            c.changed();
+                          },
+                          onSubmitted: (_) {
+                            c.send(r);
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              SizedBox(
+                width: 91,
+                height: 40,
+                child: Tooltip(
+                  message: c.running && c.runningId != r.id
+                      ? '另一个标签页正在发送请求'
+                      : '发送请求 · Ctrl + Enter',
+                  child: FilledButton(
+                    key: const ValueKey('send-request'),
+                    onPressed: c.running
+                        ? (c.runningId == r.id ? c.cancel : null)
+                        : () {
+                            c.send(r);
+                          },
+                    child: Text(c.runningId == r.id ? '取消' : '发送'),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+      if (c.validationError != null)
+        Padding(
+          padding: const EdgeInsets.fromLTRB(22, 8, 20, 0),
+          child: Text(
+            c.validationError!,
+            style: const TextStyle(fontSize: 12, color: AppColors.red),
+          ),
+        ),
+      const SizedBox(height: 9),
+      Expanded(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final maximum = (constraints.maxHeight - 150).clamp(
+              120.0,
+              double.infinity,
+            );
+            final height = (_requestHeight ?? 184.0).clamp(120.0, maximum);
+            return Column(
+              children: [
+                SizedBox(
+                  height: height,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: Column(
+                      children: [
+                        SectionTabs(
+                          tabs: const ['Params', 'Headers', 'Body', '认证'],
+                          value: _tab,
+                          onChanged: (v) => setState(() => _tab = v),
+                        ),
+                        Expanded(
+                          child: switch (_tab) {
+                            'Params' => EntryTable(
+                              key: ValueKey('${r.id}-params'),
+                              entries: r.params,
+                              onChanged: c.changed,
+                              kind: '参数',
+                            ),
+                            'Headers' => EntryTable(
+                              key: ValueKey('${r.id}-headers'),
+                              entries: r.headers,
+                              onChanged: c.changed,
+                              kind: 'Header',
+                            ),
+                            'Body' => _bodyEditor(),
+                            _ => _authEditor(),
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                Semantics(
+                  label: '拖动调整请求区与响应区高度',
+                  child: MouseRegion(
+                    cursor: SystemMouseCursors.resizeUpDown,
+                    child: GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onVerticalDragUpdate: (details) => setState(
+                        () => _requestHeight = (height + details.delta.dy)
+                            .clamp(120.0, maximum),
+                      ),
+                      child: SizedBox(
+                        height: 12,
+                        child: Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            const Divider(),
+                            Container(
+                              color: Colors.white,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                              ),
+                              child: const Icon(
+                                Icons.drag_handle_rounded,
+                                size: 13,
+                                color: Color(0xFFA0AEC1),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: ResponsePane(
+                    response: c.responses[r.id],
+                    running: c.runningId == r.id,
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
+      ),
+    ],
+  );
+
+  Widget _bodyEditor() => Column(
+    children: [
+      SizedBox(
+        height: 38,
+        child: Row(
+          children: [
+            DropdownButtonHideUnderline(
+              child: DropdownButton<String>(
+                value: r.bodyType,
+                isDense: true,
+                style: const TextStyle(
+                  fontFamily: 'Microsoft YaHei',
+                  fontSize: 12,
+                  color: AppColors.ink,
+                ),
+                items: const [
+                  DropdownMenuItem(value: 'none', child: Text('无 Body')),
+                  DropdownMenuItem(value: 'json', child: Text('JSON')),
+                  DropdownMenuItem(value: 'text', child: Text('原始文本')),
+                ],
+                onChanged: (v) {
+                  if (v != null) {
+                    r.bodyType = v;
+                    c.changed();
+                  }
+                },
+              ),
+            ),
+            const Spacer(),
+            if (r.bodyType == 'json')
+              TextButton(
+                onPressed: () {
+                  r.body = prettyJson(r.body);
+                  _body.text = r.body;
+                  c.changed();
+                },
+                child: const Text('格式化'),
+              ),
+          ],
+        ),
+      ),
+      Expanded(
+        child: r.bodyType == 'none'
+            ? const Center(
+                child: Text(
+                  '此请求不发送正文',
+                  style: TextStyle(fontSize: 12, color: AppColors.muted),
+                ),
+              )
+            : TextField(
+                key: const ValueKey('request-body'),
+                controller: _body,
+                expands: true,
+                maxLines: null,
+                textAlignVertical: TextAlignVertical.top,
+                style: codeStyle,
+                decoration: InputDecoration(
+                  hintText: r.bodyType == 'json'
+                      ? '{\n  "key": "value"\n}'
+                      : '输入请求正文',
+                  contentPadding: const EdgeInsets.all(12),
+                ),
+                onChanged: (v) {
+                  r.body = v;
+                  c.changed();
+                },
+              ),
+      ),
+      const SizedBox(height: 6),
+    ],
+  );
+  Widget _authEditor() => ListView(
+    padding: const EdgeInsets.only(top: 12),
+    children: [
+      Row(
+        children: [
+          const SizedBox(
+            width: 82,
+            child: Text('认证方式', style: TextStyle(fontSize: 12)),
+          ),
+          DropdownButtonHideUnderline(
+            child: DropdownButton<String>(
+              value: r.authType,
+              isDense: true,
+              style: const TextStyle(
+                fontFamily: 'Microsoft YaHei',
+                fontSize: 12,
+                color: AppColors.ink,
+              ),
+              items: const [
+                DropdownMenuItem(value: 'none', child: Text('无认证')),
+                DropdownMenuItem(value: 'bearer', child: Text('Bearer Token')),
+              ],
+              onChanged: (v) {
+                if (v != null) {
+                  r.authType = v;
+                  c.changed();
+                }
+              },
+            ),
+          ),
+        ],
+      ),
+      if (r.authType == 'bearer') ...[
+        const SizedBox(height: 15),
+        TextField(
+          controller: _token,
+          obscureText: true,
+          enableSuggestions: false,
+          autocorrect: false,
+          style: codeStyle,
+          decoration: const InputDecoration(
+            labelText: 'Token',
+            hintText: '填写 Token，无需 Bearer 前缀',
+          ),
+          onChanged: (v) {
+            r.token = v;
+            c.changed();
+          },
+        ),
+        const SizedBox(height: 8),
+        const Text(
+          '发送时自动添加 Authorization Header。',
+          style: TextStyle(fontSize: 11, color: AppColors.muted),
+        ),
+      ],
+    ],
+  );
+}
+
+class EntryTable extends StatelessWidget {
+  const EntryTable({
+    super.key,
+    required this.entries,
+    required this.onChanged,
+    required this.kind,
+  });
+  final List<Entry> entries;
+  final VoidCallback onChanged;
+  final String kind;
+  @override
+  Widget build(BuildContext context) => Column(
+    children: [
+      Container(
+        height: 33,
+        decoration: const BoxDecoration(
+          color: Color(0xFFF8FAFC),
+          border: Border(bottom: BorderSide(color: AppColors.line)),
+        ),
+        child: Row(
+          children: [
+            const SizedBox(width: 36),
+            Expanded(
+              flex: 3,
+              child: Text(
+                '$kind名',
+                style: const TextStyle(fontSize: 11, color: AppColors.muted),
+              ),
+            ),
+            const Expanded(
+              flex: 4,
+              child: Text(
+                '值',
+                style: TextStyle(fontSize: 11, color: AppColors.muted),
+              ),
+            ),
+            const Expanded(
+              flex: 2,
+              child: Text(
+                '说明',
+                style: TextStyle(fontSize: 11, color: AppColors.muted),
+              ),
+            ),
+            const SizedBox(width: 30),
+          ],
+        ),
+      ),
+      Expanded(
+        child: ListView.builder(
+          itemCount: entries.length + 1,
+          itemBuilder: (context, index) {
+            if (index == entries.length) {
+              return Align(
+                alignment: Alignment.centerLeft,
+                child: TextButton.icon(
+                  onPressed: () {
+                    entries.add(Entry());
+                    onChanged();
+                  },
+                  icon: const Icon(Icons.add, size: 14),
+                  label: Text('添加$kind', style: const TextStyle(fontSize: 12)),
+                ),
+              );
+            }
+            final e = entries[index];
+            Widget field(
+              String key,
+              String value,
+              String hint,
+              ValueChanged<String> update,
+            ) => TextFormField(
+              key: ValueKey('${e.id}-$key'),
+              initialValue: value,
+              style: codeStyle.copyWith(fontSize: 12, height: 1.2),
+              decoration: InputDecoration(
+                hintText: hint,
+                fillColor: Colors.transparent,
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 6,
+                  vertical: 10,
+                ),
+                border: InputBorder.none,
+                enabledBorder: InputBorder.none,
+                focusedBorder: const UnderlineInputBorder(
+                  borderSide: BorderSide(color: AppColors.primary),
+                ),
+              ),
+              onChanged: (v) {
+                update(v);
+                onChanged();
+              },
+            );
+            return Container(
+              key: ValueKey(e.id),
+              height: 36,
+              decoration: const BoxDecoration(
+                border: Border(bottom: BorderSide(color: AppColors.line)),
+              ),
+              child: Row(
+                children: [
+                  SizedBox(
+                    width: 36,
+                    child: Checkbox(
+                      semanticLabel: '启用${e.name.isEmpty ? kind : e.name}',
+                      value: e.enabled,
+                      onChanged: (v) {
+                        e.enabled = v ?? false;
+                        onChanged();
+                      },
+                    ),
+                  ),
+                  Expanded(
+                    flex: 3,
+                    child: field('name', e.name, '名称', (v) => e.name = v),
+                  ),
+                  Expanded(
+                    flex: 4,
+                    child: field('value', e.value, '值', (v) => e.value = v),
+                  ),
+                  Expanded(
+                    flex: 2,
+                    child: field(
+                      'description',
+                      e.description,
+                      '可选',
+                      (v) => e.description = v,
+                    ),
+                  ),
+                  SizedBox(
+                    width: 30,
+                    child: IconButton(
+                      tooltip: '删除$kind',
+                      icon: const Icon(Icons.close, size: 14),
+                      onPressed: () {
+                        entries.remove(e);
+                        onChanged();
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
+      ),
+    ],
+  );
+}

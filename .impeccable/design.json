@@ -1,0 +1,351 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-03T02:53:44.624396+00:00",
+  "title": "Design System: Weils API",
+  "extensions": {
+    "colorMeta": {
+      "primary": {
+        "role": "primary",
+        "displayName": "Primary",
+        "tonalRamp": [
+          "oklch(15.00% 0.20302 264.56)",
+          "oklch(26.43% 0.20302 264.56)",
+          "oklch(37.86% 0.20302 264.56)",
+          "oklch(49.29% 0.20302 264.56)",
+          "oklch(60.71% 0.20302 264.56)",
+          "oklch(72.14% 0.20302 264.56)",
+          "oklch(83.57% 0.20302 264.56)",
+          "oklch(95.00% 0.20302 264.56)"
+        ]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Ink",
+        "tonalRamp": [
+          "oklch(15.00% 0.04212 258.30)",
+          "oklch(26.43% 0.04212 258.30)",
+          "oklch(37.86% 0.04212 258.30)",
+          "oklch(49.29% 0.04212 258.30)",
+          "oklch(60.71% 0.04212 258.30)",
+          "oklch(72.14% 0.04212 258.30)",
+          "oklch(83.57% 0.04212 258.30)",
+          "oklch(95.00% 0.04212 258.30)"
+        ]
+      },
+      "muted": {
+        "role": "neutral",
+        "displayName": "Muted",
+        "tonalRamp": [
+          "oklch(15.00% 0.03877 257.87)",
+          "oklch(26.43% 0.03877 257.87)",
+          "oklch(37.86% 0.03877 257.87)",
+          "oklch(49.29% 0.03877 257.87)",
+          "oklch(60.71% 0.03877 257.87)",
+          "oklch(72.14% 0.03877 257.87)",
+          "oklch(83.57% 0.03877 257.87)",
+          "oklch(95.00% 0.03877 257.87)"
+        ]
+      },
+      "shell": {
+        "role": "neutral",
+        "displayName": "Shell",
+        "tonalRamp": [
+          "oklch(15.00% 0.00454 258.32)",
+          "oklch(26.43% 0.00454 258.32)",
+          "oklch(37.86% 0.00454 258.32)",
+          "oklch(49.29% 0.00454 258.32)",
+          "oklch(60.71% 0.00454 258.32)",
+          "oklch(72.14% 0.00454 258.32)",
+          "oklch(83.57% 0.00454 258.32)",
+          "oklch(95.00% 0.00454 258.32)"
+        ]
+      },
+      "line": {
+        "role": "neutral",
+        "displayName": "Line",
+        "tonalRamp": [
+          "oklch(15.00% 0.01089 256.70)",
+          "oklch(26.43% 0.01089 256.70)",
+          "oklch(37.86% 0.01089 256.70)",
+          "oklch(49.29% 0.01089 256.70)",
+          "oklch(60.71% 0.01089 256.70)",
+          "oklch(72.14% 0.01089 256.70)",
+          "oklch(83.57% 0.01089 256.70)",
+          "oklch(95.00% 0.01089 256.70)"
+        ]
+      },
+      "selection": {
+        "role": "primary",
+        "displayName": "Selection",
+        "tonalRamp": [
+          "oklch(15.00% 0.01613 262.75)",
+          "oklch(26.43% 0.01613 262.75)",
+          "oklch(37.86% 0.01613 262.75)",
+          "oklch(49.29% 0.01613 262.75)",
+          "oklch(60.71% 0.01613 262.75)",
+          "oklch(72.14% 0.01613 262.75)",
+          "oklch(83.57% 0.01613 262.75)",
+          "oklch(95.00% 0.01613 262.75)"
+        ]
+      },
+      "white": {
+        "role": "neutral",
+        "displayName": "White",
+        "tonalRamp": [
+          "oklch(15.00% 0.00000 0.00)",
+          "oklch(26.43% 0.00000 0.00)",
+          "oklch(37.86% 0.00000 0.00)",
+          "oklch(49.29% 0.00000 0.00)",
+          "oklch(60.71% 0.00000 0.00)",
+          "oklch(72.14% 0.00000 0.00)",
+          "oklch(83.57% 0.00000 0.00)",
+          "oklch(95.00% 0.00000 0.00)"
+        ]
+      },
+      "green": {
+        "role": "semantic",
+        "displayName": "Green",
+        "tonalRamp": [
+          "oklch(15.00% 0.10899 160.39)",
+          "oklch(26.43% 0.10899 160.39)",
+          "oklch(37.86% 0.10899 160.39)",
+          "oklch(49.29% 0.10899 160.39)",
+          "oklch(60.71% 0.10899 160.39)",
+          "oklch(72.14% 0.10899 160.39)",
+          "oklch(83.57% 0.10899 160.39)",
+          "oklch(95.00% 0.10899 160.39)"
+        ]
+      },
+      "red": {
+        "role": "semantic",
+        "displayName": "Red",
+        "tonalRamp": [
+          "oklch(15.00% 0.16445 18.83)",
+          "oklch(26.43% 0.16445 18.83)",
+          "oklch(37.86% 0.16445 18.83)",
+          "oklch(49.29% 0.16445 18.83)",
+          "oklch(60.71% 0.16445 18.83)",
+          "oklch(72.14% 0.16445 18.83)",
+          "oklch(83.57% 0.16445 18.83)",
+          "oklch(95.00% 0.16445 18.83)"
+        ]
+      },
+      "amber": {
+        "role": "semantic",
+        "displayName": "Amber",
+        "tonalRamp": [
+          "oklch(15.00% 0.12054 65.07)",
+          "oklch(26.43% 0.12054 65.07)",
+          "oklch(37.86% 0.12054 65.07)",
+          "oklch(49.29% 0.12054 65.07)",
+          "oklch(60.71% 0.12054 65.07)",
+          "oklch(72.14% 0.12054 65.07)",
+          "oklch(83.57% 0.12054 65.07)",
+          "oklch(95.00% 0.12054 65.07)"
+        ]
+      },
+      "table": {
+        "role": "neutral",
+        "displayName": "Table",
+        "tonalRamp": [
+          "oklch(15.00% 0.00341 247.86)",
+          "oklch(26.43% 0.00341 247.86)",
+          "oklch(37.86% 0.00341 247.86)",
+          "oklch(49.29% 0.00341 247.86)",
+          "oklch(60.71% 0.00341 247.86)",
+          "oklch(72.14% 0.00341 247.86)",
+          "oklch(83.57% 0.00341 247.86)",
+          "oklch(95.00% 0.00341 247.86)"
+        ]
+      },
+      "syntax-key": {
+        "role": "semantic",
+        "displayName": "Syntax Key",
+        "tonalRamp": [
+          "oklch(15.00% 0.10104 262.35)",
+          "oklch(26.43% 0.10104 262.35)",
+          "oklch(37.86% 0.10104 262.35)",
+          "oklch(49.29% 0.10104 262.35)",
+          "oklch(60.71% 0.10104 262.35)",
+          "oklch(72.14% 0.10104 262.35)",
+          "oklch(83.57% 0.10104 262.35)",
+          "oklch(95.00% 0.10104 262.35)"
+        ]
+      },
+      "syntax-literal": {
+        "role": "semantic",
+        "displayName": "Syntax Literal",
+        "tonalRamp": [
+          "oklch(15.00% 0.10009 73.59)",
+          "oklch(26.43% 0.10009 73.59)",
+          "oklch(37.86% 0.10009 73.59)",
+          "oklch(49.29% 0.10009 73.59)",
+          "oklch(60.71% 0.10009 73.59)",
+          "oklch(72.14% 0.10009 73.59)",
+          "oklch(83.57% 0.10009 73.59)",
+          "oklch(95.00% 0.10009 73.59)"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "title": {
+        "displayName": "Title",
+        "purpose": "Themed medium title."
+      },
+      "heading": {
+        "displayName": "Heading",
+        "purpose": "Request and dialog headings."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Ordinary UI text."
+      },
+      "small": {
+        "displayName": "Small",
+        "purpose": "Metadata and secondary text."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Compact captions and helper text."
+      },
+      "method": {
+        "displayName": "Method",
+        "purpose": "Resource-row HTTP method."
+      },
+      "code": {
+        "displayName": "Code",
+        "purpose": "Selectable response and body content."
+      }
+    },
+    "shadows": [],
+    "motion": [
+      {
+        "name": "tooltip-wait",
+        "value": "500ms",
+        "purpose": "Delay before tooltip display; interaction timing, not animation."
+      },
+      {
+        "name": "snackbar-feedback",
+        "value": "2s",
+        "purpose": "Common transient feedback duration; not an animation token."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "sidebar-wide",
+        "value": "1400px"
+      },
+      {
+        "name": "minimum-content-width",
+        "value": "1000px"
+      },
+      {
+        "name": "minimum-content-height",
+        "value": "600px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Create or send. Portable native-widget documentation equivalent; Material state rendering remains framework-owned.",
+      "html": "<button class=\"ds-primary\">发送</button>",
+      "css": ".ds-primary{font-family:\"Microsoft YaHei\",\"Segoe UI\",Arial;font-size:13px;background:#3567E8;color:white;border:0;border-radius:7px;min-height:36px;padding:0 18px;font-weight:500}.ds-primary:hover{background-image:linear-gradient(#ffffff14,#ffffff14)}.ds-primary:focus-visible{outline:1.5px solid #3567E8;outline-offset:2px}.ds-primary:active{background-image:linear-gradient(#ffffff1a,#ffffff1a)}"
+    },
+    {
+      "name": "Outlined button",
+      "kind": "button",
+      "refersTo": "button-outlined",
+      "description": "Secondary explicit action. Portable native-widget documentation equivalent; Material state rendering remains framework-owned.",
+      "html": "<button class=\"ds-outlined\">保存</button>",
+      "css": ".ds-outlined{font-family:\"Microsoft YaHei\",\"Segoe UI\",Arial;font-size:13px;background:white;color:#263449;border:1px solid #E4E9F0;border-radius:7px;min-height:34px;padding:0 18px}.ds-outlined:hover{background:#F4F6F9}.ds-outlined:focus-visible{outline:1.5px solid #3567E8;outline-offset:2px}.ds-outlined:active{background:#EAF0FB}"
+    },
+    {
+      "name": "Text button",
+      "kind": "button",
+      "refersTo": "button-text",
+      "description": "Lightweight action. Portable native-widget documentation equivalent; Material state rendering remains framework-owned.",
+      "html": "<button class=\"ds-text\">添加参数</button>",
+      "css": ".ds-text{font-family:\"Microsoft YaHei\",\"Segoe UI\",Arial;font-size:13px;background:transparent;color:#3567E8;border:0;border-radius:7px;padding:8px 12px}.ds-text:hover{background:#EAF0FB}.ds-text:focus-visible{outline:1.5px solid #3567E8}.ds-text:active{background:#EAF0FB}"
+    },
+    {
+      "name": "Outlined field",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Standard editable field. Portable native-widget documentation equivalent; Material state rendering remains framework-owned.",
+      "html": "<input class=\"ds-field\" aria-label=\"名称\" placeholder=\"名称\">",
+      "css": ".ds-field{font-family:\"Microsoft YaHei\",\"Segoe UI\",Arial;font-size:13px;color:#263449;background:white;padding:11px 12px;border:1px solid #E4E9F0;border-radius:7px}.ds-field::placeholder{color:#65748A}.ds-field:hover{border-color:#65748A}.ds-field:focus-visible{outline:none;border:1.5px solid #3567E8}"
+    },
+    {
+      "name": "Selected rail destination",
+      "kind": "nav",
+      "refersTo": "nav-selected",
+      "description": "Active desktop destination. Portable native-widget documentation equivalent; Material state rendering remains framework-owned.",
+      "html": "<button class=\"ds-nav\" aria-current=\"page\"><svg width=\"23\" height=\"23\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" aria-hidden=\"true\"><path d=\"m3 8 9-6 9 6-9 6-9-6Zm0 4 9 6 9-6M3 16l9 6 9-6\"/></svg><span>接口管理</span></button>",
+      "css": ".ds-nav{font-family:\"Microsoft YaHei\",\"Segoe UI\",Arial;font-size:13px;width:60px;height:67px;background:#EAF0FB;color:#3567E8;border:0;border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;font-size:11px;font-weight:600}.ds-nav:hover{background-image:linear-gradient(#3567E814,#3567E814)}.ds-nav:focus-visible{outline:1.5px solid #3567E8}.ds-nav:active{background-image:linear-gradient(#3567E81a,#3567E81a)}"
+    },
+    {
+      "name": "Selected request row",
+      "kind": "nav",
+      "refersTo": "request-row-selected",
+      "description": "Selected request in the resource tree. Portable native-widget documentation equivalent; Material state rendering remains framework-owned.",
+      "html": "<button class=\"ds-row\"><span class=\"ds-method\">GET</span><span>示例接口</span></button>",
+      "css": ".ds-row{font-family:\"Microsoft YaHei\",\"Segoe UI\",Arial;font-size:13px;height:34px;padding:0 8px;background:#EAF0FB;color:#263449;border:0;border-radius:5px;display:flex;align-items:center;font-size:12px}.ds-method{width:43px;text-align:left;font-family:Consolas,\"Microsoft YaHei\";font-size:10px;font-weight:600;color:#23835A}.ds-row:hover{background-image:linear-gradient(#3567E814,#3567E814)}.ds-row:focus-visible{outline:1.5px solid #3567E8}.ds-row:active{background-image:linear-gradient(#3567E81a,#3567E81a)}"
+    },
+    {
+      "name": "Selected section tab",
+      "kind": "nav",
+      "refersTo": "section-tab-selected",
+      "description": "Underline-selected request or response section. Portable native-widget documentation equivalent; Material state rendering remains framework-owned.",
+      "html": "<button class=\"ds-tab\" aria-selected=\"true\" role=\"tab\">Params</button>",
+      "css": ".ds-tab{font-family:\"Microsoft YaHei\",\"Segoe UI\",Arial;font-size:13px;height:40px;padding:0 16px;color:#3567E8;background:white;border:0;border-bottom:2px solid #3567E8;font-weight:600}.ds-tab:hover{background:#EAF0FB}.ds-tab:focus-visible{outline:1.5px solid #3567E8;outline-offset:-2px}.ds-tab:active{background:#EAF0FB}"
+    },
+    {
+      "name": "Response status",
+      "kind": "chip",
+      "refersTo": "status",
+      "description": "Read-only success badge. Portable native-widget documentation equivalent; Material state rendering remains framework-owned.",
+      "html": "<span class=\"ds-status\">200 OK</span>",
+      "css": ".ds-status{font-family:\"Microsoft YaHei\",\"Segoe UI\",Arial;font-size:12px;display:inline-block;color:#23835A;background:rgba(35,131,90,.08);border-radius:4px;padding:3px 8px}"
+    }
+  ],
+  "narrative": {
+    "northStar": "浅色蓝灰 API 工作台",
+    "overview": "A clean, restrained Windows desktop API tool. White work areas sit inside a cool-gray shell; slate text, pale-blue selection and cobalt actions keep the request and response legible together. The confirmed visual language is practical and compact.\n\nMicrosoft YaHei and the Windows fallback stack serve Chinese UI text; Consolas separates URLs, methods and response content. Density comes from short rows and thin separators rather than decorative cards. This records the shipped Flutter implementation, with no new visual identity.",
+    "keyCharacteristics": [
+      "White workspace and cool-gray shell.",
+      "Pale-blue selection with cobalt action and active-state cues.",
+      "Compact desktop controls, thin borders and readable code."
+    ],
+    "rules": [
+      {
+        "name": "Selection and Action",
+        "body": "Use pale blue for selected surfaces and cobalt for actions, active labels and tab underlines.",
+        "section": "colors"
+      },
+      {
+        "name": "UI and Code",
+        "body": "Keep the Windows UI stack for interface text and Consolas for code content and method labels.",
+        "section": "typography"
+      },
+      {
+        "name": "Flat Workspace",
+        "body": "Separate persistent work areas with tone and thin borders; primary buttons have zero elevation.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do use the existing white, shell, selection and line roles for pane hierarchy.",
+      "Do keep request and response together and allow code content to scroll in both axes.",
+      "Do pair status and method colors with readable text labels.",
+      "Do retain the confirmed Chinese navigation and utility labels."
+    ],
+    "donts": [
+      "Don't introduce branch or environment controls, extra rail destinations, or extra shell utility entries.",
+      "Don't replace the confirmed blue-gray palette with the discarded warm or purple directions.",
+      "Don't promote screenshot sample requests, response metrics or generated preview ramps into product defaults."
+    ]
+  }
+}

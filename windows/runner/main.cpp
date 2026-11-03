@@ -26,8 +26,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE prev,
 
   FlutterWindow window(project);
   Win32Window::Point origin(10, 10);
-  Win32Window::Size size(1280, 720);
-  if (!window.Create(L"weils_api", origin, size)) {
+  Win32Window::Size size(1440, 860);
+  if (!window.Create(L"Weils API", origin, size)) {
     return EXIT_FAILURE;
   }
   window.SetQuitOnClose(true);
