@@ -1,7 +1,11 @@
 name: CI
 
-# 流程：push 到远程 dev → 静态分析 + 测试 → 全部通过后自动把 dev 合并进 main
-#      任一环节失败，main 保持不动（不会半合进去）
+# 流程：push 到远程 dev
+#       → analyze + test（ubuntu）→ Windows 集成测试（windows）
+#       → 全部通过后自动把 dev 合并进 main（保留 dev 上的所有提交）
+#       任一环节失败，main 保持不动（不会半合进去）
+
+# 如果后面被卡住，把 continue-on-error: true 加回 windows-integration 并把它从 merge.needs 里删掉即可回到「只告警」模式
 on:
   push:
     branches:
@@ -76,13 +80,13 @@ jobs:
           retention-days: 7
 
   # 集成测试需要真实的 Windows 桌面与文件系统，ubuntu 上跑不了。
-  # 暂设为 continue-on-error：失败只告警，不阻断 dev → main 的自动合并。
-  # 等它稳定后再去掉这一行、并把它加进 merge 的 needs。
+  # 串行：analyze + test 全绿后才跑这里；它通过后才会合并进 main。
   windows-integration:
     name: Windows integration test
+    needs: [analyze, test]
     runs-on: windows-latest
     timeout-minutes: 40
-    continue-on-error: true
+    # continue-on-error: true
     permissions:
       contents: read
     steps:
@@ -121,8 +125,9 @@ jobs:
 
   merge:
     name: Merge dev into main
-    # 必须等 analyze + test 都通过；任一失败则本 job 直接跳过，main 不动
-    needs: [analyze, test]
+    # 必须等 analyze + test + windows-integration 全部通过；
+    # 任一失败则本 job 直接跳过，main 保持不动
+    needs: [analyze, test, windows-integration]
     if: success() && github.event_name == 'push' && github.ref == 'refs/heads/dev'
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -152,6 +157,15 @@ jobs:
             exit 0
           fi
 
-          # --no-ff 保留一次合并提交，历史可读；冲突时这里会失败，main 保持不变
-          git merge --no-ff origin/dev -m "chore: merge dev into main (auto, dev@${GITHUB_SHA::7})"
+          # --no-ff：不做 squash，dev 上的每个提交都保留在 main 的历史里；
+          # 再把这一批提交逐条写进合并说明，便于在 main 上直接看清合并了哪些改动。
+          commits="$(git log --no-merges --format='- %s (%h)' origin/main..origin/dev)"
+          if [ -n "$commits" ]; then
+            git merge --no-ff origin/dev \
+              -m "chore: merge dev into main (auto, dev@${GITHUB_SHA::7})" \
+              -m "$commits"
+          else
+            git merge --no-ff origin/dev \
+              -m "chore: merge dev into main (auto, dev@${GITHUB_SHA::7})"
+          fi
           git push origin main
