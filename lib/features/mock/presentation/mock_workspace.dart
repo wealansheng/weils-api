@@ -203,7 +203,7 @@ class _MockWorkspaceState extends State<MockWorkspace> {
                       key: ValueKey('mock-path-${definition.id}'),
                       value: definition.path,
                       label: '路径',
-                      hint: '/users/:id',
+                      hint: '/user/* 或 /users/:id',
                       monospace: true,
                       onChanged: (v) => vm.update((d) => d.copyWith(path: v)),
                     ),
@@ -696,7 +696,8 @@ class _TemplateHelp extends StatelessWidget {
           '{\n  "users|5-5": [{\n    "id|+1": 1,\n    "name": "@cname",\n    "age": "@integer(18, 60)",\n    "email": "@email",\n    "role": "@pick([\\"admin\\", \\"user\\"])"\n  }]\n}\n\n'
           '常用占位符：@integer(min,max)、@natural(min,max)、@float(min,max,dmin,dmax)、@boolean、@string、@name、@cname、@email、@guid、@date、@time、@datetime、@pick([…])。\n\n'
           '完整占位符保留类型，嵌入文本则转换为字符串。数组 |1 抽取一个元素；|1-1 生成单项数组。支持字符串重复、数字范围、小数位数、递增、布尔概率与对象属性抽取。\n\n'
-          '每次请求或预览独立生成，递增在本次生成内累计。深度最多 32 层、数组最多 1000 项、生成正文最多 2 MB。不支持 JavaScript、函数、正则生成、字段引用或其他占位符。普通文本中的 @单词 也会识别为占位符。',
+          '路径末尾可用 /* 捕获后续多级内容，例如 /xxx/* 匹配 /xxx/a/b。响应正文填写 {"path":"{{path.*}}"} 即可得到 {"path":"a/b"}；/users/:id 可用 {{path.id}}。JSON 与文本正文均支持，预览保留路径占位符，实际调用时填入。\n\n'
+          '每次请求或预览独立生成，递增在本次生成内累计。深度最多 32 层、数组最多 1000 项、生成正文最多 2 MB。不支持 JavaScript、函数、正则生成、模板内字段引用或其他占位符。普通文本中的 @单词 也会识别为占位符。',
           style: TextStyle(fontSize: 12, height: 1.7),
         ),
       ),

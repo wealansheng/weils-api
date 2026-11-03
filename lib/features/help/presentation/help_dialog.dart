@@ -38,7 +38,7 @@ Future<void> openHelp(BuildContext context) => showDialog<void>(
           ),
           _HelpItem(
             '本地 Mock 服务',
-            '在“Mock 管理”中新建 GET、POST、PUT 或 DELETE 接口，路径支持 /users/:id。编辑响应场景、状态码、Headers 与延迟，保存后启用配置。服务仅监听 127.0.0.1，默认端口 3000，重启应用后需手动启动；端口占用时可更换。入站调用不会写入请求历史。',
+            '在“Mock 管理”中新建 GET、POST、PUT 或 DELETE 接口，路径支持 /users/:id 和任意前缀的末尾通配符（如 /xxx/*、/a/b/*）。响应正文用 {{path.*}} 取得通配部分，用 {{path.id}} 取得命名参数。编辑响应场景、状态码、Headers 与延迟，保存后启用配置。服务仅监听 127.0.0.1，默认端口 3000，重启应用后需手动启动；端口占用时可更换。入站调用不会写入请求历史。',
           ),
           _HelpItem(
             'Mock 条件与模板',

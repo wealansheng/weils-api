@@ -179,7 +179,16 @@ void validateMockDefinition(
     fail('路径须以 / 开头，不含查询参数、空白、编码字符或末尾斜线');
   }
   final names = <String>{};
-  for (final segment in path.split('/').skip(1)) {
+  final segments = path.split('/').skip(1).toList();
+  for (var index = 0; index < segments.length; index++) {
+    final segment = segments[index];
+    if (segment.contains('*')) {
+      if (segment != '*' || index != segments.length - 1) {
+        fail('通配符 * 须独占最后一个路径段，例如 /user/* 或 /a/b/*');
+      }
+      names.add('*');
+      continue;
+    }
     if (segment.startsWith(':')) {
       final name = segment.substring(1);
       if (!RegExp(r'^[A-Za-z_][A-Za-z0-9_]*$').hasMatch(name) ||
@@ -203,6 +212,13 @@ void validateMockDefinition(
     fail('只允许一个无条件的默认响应');
   }
   for (final scenario in definition.scenarios) {
+    // References are valid at save time even though actual values are only
+    // available per HTTP request. Check both JSON and plain-text responses.
+    for (final token in RegExp(
+      r'\{\{path\.([^{}]+)\}\}',
+    ).allMatches(scenario.body)) {
+      if (!names.contains(token[1]!)) fail('路径中未定义响应引用的参数：${token[1]}');
+    }
     if (scenario.statusCode < 200 || scenario.statusCode > 599) {
       fail('响应状态码须在 200–599 之间');
     }

@@ -39,9 +39,9 @@ void main() {
         expect(fixture.dependencies.mockServer.running, running);
       }
 
-      Future<Map<String, dynamic>> call() async {
+      Future<Map<String, dynamic>> call([String tail = '42']) async {
         final request = await client.getUrl(
-          Uri.parse('http://127.0.0.1:$port/users/42'),
+          Uri.parse('http://127.0.0.1:$port/users/$tail'),
         );
         final response = await request.close();
         expect(response.statusCode, 200);
@@ -58,10 +58,10 @@ void main() {
         await tester.tap(find.byKey(const ValueKey('create-mock')));
         await tester.pumpAndSettle();
         await tester.enterText(input('接口名称'), 'Windows 本地 Mock');
-        await tester.enterText(input('路径'), '/users/:id');
+        await tester.enterText(input('路径'), '/users/*');
         await tester.enterText(
           input('响应 JSON 模板'),
-          '{"version":1,"users|2-2":[{"id|+1":1,"name":"@cname"}]}',
+          '{"version":1,"tail":"{{path.*}}","users|2-2":[{"id|+1":1,"name":"@cname"}]}',
         );
         await tester.pump();
         await tester.tap(find.byKey(const ValueKey('save-mock')));
@@ -70,8 +70,9 @@ void main() {
         await tester.enterText(input('端口'), '$port');
         await tester.tap(find.byKey(const ValueKey('toggle-mock-server')));
         await settleService(true);
-        final first = await call();
+        final first = await call('42/details');
         expect(first['version'], 1);
+        expect(first['tail'], '42/details');
         expect(first['users'], hasLength(2));
         await tester.enterText(input('响应 JSON 模板'), '{"version":2}');
         await tester.pump();
