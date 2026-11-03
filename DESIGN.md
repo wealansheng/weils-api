@@ -109,7 +109,7 @@ Microsoft YaHei and the Windows fallback stack serve Chinese UI text; Consolas s
 - Pale-blue selection with cobalt action and active-state cues.
 - Compact desktop controls, thin borders and readable code.
 
-Evidence: `lib/core/theme/app_theme.dart`, `lib/shared/widgets/`, `lib/layout/`, `lib/features/workspace/presentation/` and `lib/features/settings/presentation/`; cross-checked against `.impeccable/review/native-editor.png`. The architecture refactor preserves these visual values and interactions. `PRODUCT.md` and the surface contract supply the already-confirmed language and shell constraints. Values expressed as px in the portable frontmatter correspond to Flutter logical pixels, not physical Windows pixels. Component tokens describe observed defaults; Flutter Material 3 supplies inherited states where the app does not override them.
+Evidence: `lib/core/theme/app_theme.dart`, `lib/shared/widgets/`, `lib/layout/`, `lib/features/workspace/presentation/` and `lib/features/settings/presentation/`; Mock extension checked against `lib/features/mock/presentation/mock_workspace.dart`, `mock_sidebar.dart`, `widgets/mock_field_builder.dart`, `widgets/mock_input.dart`, its view model and `lib/layout/app_shell.dart`; Mock rendering sampled in `.impeccable/review/mock-editor-1280.png`. Cross-checked against `.impeccable/review/native-editor.png`. The architecture refactor preserves these visual values and interactions. `PRODUCT.md` and the surface contract supply the already-confirmed language and shell constraints. Values expressed as px in the portable frontmatter correspond to Flutter logical pixels, not physical Windows pixels. Component tokens describe observed defaults; Flutter Material 3 supplies inherited states where the app does not override them.
 
 ## Colors
 
@@ -193,7 +193,7 @@ Generated request-header names and values are read-only, selectable and use `mut
 
 ### Navigation
 
-The only rail destinations are **接口管理** and **请求历史**. Each destination is a 60 × 67px rounded target with a 23px Material icon and an 11px caption. Selected state combines selection fill, cobalt text/icon and semibold caption. Settings remains top-right; help remains bottom-right. These are confirmed shell commitments.
+The confirmed rail destinations are **接口管理**, **请求历史** and **Mock 管理**. Mock is the user-approved extension recorded in `.impeccable/surfaces/mock-management.md`. Each destination is a 60 × 67px rounded target with a 23px Material icon and an 11px caption. Selected state combines selection fill, cobalt text/icon and semibold caption. Settings remains top-right; help remains bottom-right. These are confirmed shell commitments.
 
 Work tabs use rounded top corners and a pale-blue active background with cobalt text. Both active and inactive labels keep Microsoft YaHei at 12px, weight 400 and line-height 1.4, so selection cannot change glyph geometry or tab width. Labels constrain to 160px and ellipsize. A 5px dot marks unsaved edits; close controls remain separate targets. Drag the tab body with the mouse to reorder requests horizontally; the overview is excluded and order persists locally. A transparent Material drag proxy preserves typography. Section tabs use muted 13px text at rest, cobalt semibold text and an underline when active.
 
@@ -206,6 +206,16 @@ Selected rows use pale blue and retain their method text, rather than recoloring
 Response badges use semantic text on the same semantic color at 8% opacity, compact insets and the status radius. Status text is accompanied by elapsed time and captured size. JSON preview colors keys, strings and literals; plain text stays slate. Empty, running, error and cancelled states have their own text and Material icon. Code remains selectable and scrollable.
 
 Response Headers use a read-only name/value table in both the editor and history. The pale table header stays visible while rows scroll; thin horizontal and vertical rules align the columns. Names occupy 32% of the available width, clamped to 160–280px. Both cells use 12px code text with a 1.5 line-height, wrap long content and support text selection. The existing copy control copies every header, including rows outside the viewport. Empty responses show “暂无响应头”.
+
+### Mock workspace
+
+The Mock destination keeps the existing shell and sidebar widths. Its searchable list pairs a compact method label with an ellipsized name and monospace path; selection uses pale blue. Enabled methods use cobalt and disabled methods use muted slate, rather than request-row method colors. A trailing dot on the name and “保存 •” distinguish a draft from “已保存”; only saved, enabled definitions serve responses. Saving publishes the definition, while editing and previewing leave the served configuration unchanged.
+
+The top service row contains port, start/stop, a text-labelled running indicator and a copy-address action. Port editing is disabled while running or busy; copying the address is enabled only while running. Inline errors remain visible in semantic red. Route name, enable checkbox, save, method and path precede the ordered scenario selector and move/add/delete controls. Response scenarios expose name, status code and delay above the existing underline tabs: **响应正文**, **匹配条件** and **响应 Headers**. Conditions use source, key and equality-value fields; Header and JSON Body choices change the field labels and hints. Scrollable conditions retain the add action below them.
+
+Mock fields retain the themed outline and focus treatment, with 13px text and a 1.5 line-height; paths, JSON templates and response headers use Consolas. The response tab pairs a JSON-template/text selector with field-table generation, syntax help and an explicit preview action. A generated preview appears below the editor in a shell-colored inset, with selectable 12px Consolas text, a 1.5 line-height and a copy action. Editing the body or its type clears the preview. Long previews truncate visually while copying retains the complete generated result. Preview generation does not save or start the service.
+
+The field-table dialog reuses outlined fields, anchored selects and ordinary dialog actions for constant, random, object and array fields. Applying to nonempty response content requires replacement confirmation. Its helper and inline validation describe the expected JSON; these controls introduce no new palette, shape or spacing tokens.
 
 ### Dialogs
 
@@ -228,6 +238,6 @@ The sidecar's HTML/CSS specimens are portable documentation approximations of th
 - Do retain the confirmed Chinese navigation and utility labels.
 
 ### Don't:
-- Don't introduce branch or environment controls, extra rail destinations, or extra shell utility entries.
+- Don't introduce branch or environment controls, rail destinations beyond the confirmed three, or extra shell utility entries.
 - Don't replace the confirmed blue-gray palette with the discarded warm or purple directions.
 - Don't promote screenshot sample requests, response metrics or generated preview ramps into product defaults.

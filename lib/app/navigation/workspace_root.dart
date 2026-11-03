@@ -31,6 +31,10 @@ import '../../shared/widgets/notice_banner.dart';
 import '../bootstrap/bootstrap_view_model.dart';
 import '../coordinators/close_coordinator.dart';
 import 'app_navigation.dart';
+import '../../features/mock/domain/repositories/mock_server.dart';
+import '../../features/mock/presentation/mock_sidebar.dart';
+import '../../features/mock/presentation/mock_workspace.dart';
+import '../../features/mock/presentation/view_models/mock_view_model.dart';
 
 /// Composition and navigation only; feature views own their display logic.
 class WorkspaceRoot extends StatefulWidget {
@@ -51,7 +55,13 @@ class _WorkspaceRootState extends State<WorkspaceRoot> {
   void initState() {
     super.initState();
     final window = context.read<DesktopWindow>();
-    _close = CloseCoordinator(context, repository, execution, window);
+    _close = CloseCoordinator(
+      context,
+      repository,
+      execution,
+      window,
+      context.read<MockServer>(),
+    );
     _closeSubscription = window.closeRequests.listen((_) {
       if (mounted) unawaited(_close.closeWindow());
     });
@@ -75,11 +85,19 @@ class _WorkspaceRootState extends State<WorkspaceRoot> {
   }
 
   void _newRequest() {
+    if (context.read<AppNavigation>().destination == AppDestination.mock) {
+      context.read<MockViewModel>().create();
+      return;
+    }
     repository.newRequest();
     _navigate(false);
   }
 
   void _save() {
+    if (context.read<AppNavigation>().destination == AppDestination.mock) {
+      unawaited(context.read<MockViewModel>().save());
+      return;
+    }
     final active = repository.state.snapshot.active;
     if (active != null) unawaited(_close.save(active));
   }
@@ -96,7 +114,9 @@ class _WorkspaceRootState extends State<WorkspaceRoot> {
 
   @override
   Widget build(BuildContext context) {
-    final historyMode = context.watch<AppNavigation>().historyMode;
+    final destination = context.watch<AppNavigation>().destination;
+    final historyMode = destination == AppDestination.history;
+    final mockMode = destination == AppDestination.mock;
     final activeId = context.select<TabsViewModel, String?>(
       (vm) => vm.activeId,
     );
@@ -109,7 +129,7 @@ class _WorkspaceRootState extends State<WorkspaceRoot> {
           if (!historyMode) _save();
         },
         const SingleActivator(LogicalKeyboardKey.enter, control: true): () {
-          if (!historyMode) _sendOrCancel();
+          if (destination == AppDestination.workspace) _sendOrCancel();
         },
         const SingleActivator(LogicalKeyboardKey.keyN, control: true):
             _newRequest,
@@ -146,23 +166,34 @@ class _WorkspaceRootState extends State<WorkspaceRoot> {
                   destinations: const [
                     RailDestination(Icons.layers_outlined, '接口管理'),
                     RailDestination(Icons.history_rounded, '请求历史'),
+                    RailDestination(Icons.dns_outlined, 'Mock 管理'),
                   ],
-                  selectedIndex: historyMode ? 1 : 0,
-                  onSelect: (index) => _navigate(index == 1),
+                  selectedIndex: destination.index,
+                  onSelect: (index) {
+                    if (index == 2) {
+                      context.read<AppNavigation>().select(AppDestination.mock);
+                    } else {
+                      _navigate(index == 1);
+                    }
+                  },
                 ),
-                sidebar: WorkspaceSidebar(
-                  historyMode: historyMode,
-                  library: library,
-                  searchController: _search,
-                  onSearch: historyMode ? history.search : library.search,
-                  child: historyMode
-                      ? HistoryListPanel(viewModel: history)
-                      : RequestLibraryPanel(
-                          viewModel: library,
-                          runningId: runningId,
-                        ),
-                ),
-                body: historyMode
+                sidebar: mockMode
+                    ? MockSidebar(viewModel: context.read<MockViewModel>())
+                    : WorkspaceSidebar(
+                        historyMode: historyMode,
+                        library: library,
+                        searchController: _search,
+                        onSearch: historyMode ? history.search : library.search,
+                        child: historyMode
+                            ? HistoryListPanel(viewModel: history)
+                            : RequestLibraryPanel(
+                                viewModel: library,
+                                runningId: runningId,
+                              ),
+                      ),
+                body: mockMode
+                    ? MockWorkspace(viewModel: context.read<MockViewModel>())
+                    : historyMode
                     ? HistoryWorkspace(
                         viewModel: history,
                         onLeave: () => _navigate(false),

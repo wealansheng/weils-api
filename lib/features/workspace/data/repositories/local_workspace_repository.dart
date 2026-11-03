@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import '../../../../core/errors/app_failure.dart';
 import '../../../../core/utils/identity.dart';
@@ -6,6 +7,8 @@ import '../../domain/entities/workspace_entities.dart';
 import '../../domain/repositories/workspace_repository.dart';
 import '../data_sources/workspace_data_source.dart';
 import '../models/workspace_json.dart';
+import '../../../mock/domain/entities/mock_definition.dart';
+import '../../../mock/domain/use_cases/generate_mock.dart';
 
 /// Owns the only mutable reference to the immutable workspace snapshot.
 class LocalWorkspaceRepository implements WorkspaceRepository {
@@ -24,6 +27,7 @@ class LocalWorkspaceRepository implements WorkspaceRepository {
   Stream<WorkspaceState> get changes => _changes.stream;
   Timer? _saveTimer;
   Future<Outcome<void>>? _settingsChange;
+  Future<Outcome<void>>? _mockChange;
   bool _disposed = false;
   void _emit(WorkspaceState next) {
     _state = next;
@@ -38,6 +42,12 @@ class LocalWorkspaceRepository implements WorkspaceRepository {
       const Duration(milliseconds: 400),
       () => unawaited(flush()),
     );
+  }
+
+  void _clearSaveFailure() {
+    if (state.notice == WorkspaceNotice.saveFailed) {
+      _emit(state.copyWith(notice: null));
+    }
   }
 
   @override
@@ -66,6 +76,7 @@ class LocalWorkspaceRepository implements WorkspaceRepository {
   @override
   Future<Outcome<void>> flush({bool discardDirtyDrafts = false}) async {
     _saveTimer?.cancel();
+    await _mockChange;
     final pending = _settingsChange;
     if (pending != null) await pending;
     if (state.storageBlocked) {
@@ -77,6 +88,15 @@ class LocalWorkspaceRepository implements WorkspaceRepository {
           .where((draft) => !snapshot.isDirty(draft))
           .toList();
       snapshot = snapshot.copyWith(
+        mockDrafts: snapshot.mockDrafts
+            .where((d) => !snapshot.isMockDirty(d))
+            .toList(),
+        mockActiveId:
+            snapshot.mockDrafts.any(
+              (d) => d.id == snapshot.mockActiveId && !snapshot.isMockDirty(d),
+            )
+            ? snapshot.mockActiveId
+            : null,
         drafts: clean,
         activeId: clean.any((d) => d.id == snapshot.activeId)
             ? snapshot.activeId
@@ -85,6 +105,7 @@ class LocalWorkspaceRepository implements WorkspaceRepository {
     }
     try {
       await source.write(WorkspaceJson.encode(snapshot));
+      _clearSaveFailure();
       return const Outcome.success();
     } catch (e) {
       _emit(state.copyWith(notice: WorkspaceNotice.saveFailed));
@@ -105,6 +126,7 @@ class LocalWorkspaceRepository implements WorkspaceRepository {
 
   Future<Outcome<void>> _updateSettings(int timeout, String? path) async {
     _saveTimer?.cancel();
+    await _mockChange;
     if (state.storageBlocked) {
       return const Outcome.failure(AppFailure(FailureCode.read));
     }
@@ -127,6 +149,7 @@ class LocalWorkspaceRepository implements WorkspaceRepository {
           dataDirectory: source.directoryPath,
         ),
       );
+      _clearSaveFailure();
       return const Outcome.success();
     } on AppFailure catch (e) {
       return Outcome.failure(e);
@@ -310,6 +333,131 @@ class LocalWorkspaceRepository implements WorkspaceRepository {
 
   @override
   void dismissNotice() => _emit(state.copyWith(notice: null));
+
+  @override
+  MockDefinition newMock() {
+    final draft = MockDefinition(path: '/mock-${newId().substring(0, 8)}');
+    _change(
+      _snapshot.copyWith(
+        mockDrafts: [..._snapshot.mockDrafts, draft],
+        mockActiveId: draft.id,
+      ),
+    );
+    return draft;
+  }
+
+  @override
+  void selectMock(String id) {
+    final saved = _snapshot.mocks.where((d) => d.id == id).firstOrNull;
+    _change(
+      _snapshot.copyWith(
+        mockDrafts: _snapshot.mockDrafts.any((d) => d.id == id) || saved == null
+            ? null
+            : [..._snapshot.mockDrafts, saved],
+        mockActiveId: id,
+      ),
+    );
+  }
+
+  @override
+  void updateMockDraft(
+    String id,
+    MockDefinition Function(MockDefinition) update,
+  ) {
+    final draft = _snapshot.mockDrafts.where((d) => d.id == id).firstOrNull;
+    if (draft == null) return;
+    final next = update(draft);
+    if (next.id != id) throw ArgumentError('Mock identity cannot be changed');
+    if (next == draft) return;
+    _change(
+      _snapshot.copyWith(
+        mockDrafts: [
+          for (final d in _snapshot.mockDrafts) d.id == id ? next : d,
+        ],
+      ),
+    );
+  }
+
+  /// Serialize commits and publish saved definitions only after disk success.
+  /// Ordinary flushes wait for this transaction before taking their snapshot.
+  Future<Outcome<void>> _commitMock(
+    Future<Outcome<void>> Function() operation,
+  ) {
+    final previous = _mockChange;
+    final settings = _settingsChange;
+    final task = Future<Outcome<void>>(() async {
+      await previous;
+      await settings;
+      if (state.storageBlocked) {
+        return const Outcome.failure(AppFailure(FailureCode.read));
+      }
+      try {
+        final result = await operation();
+        if (result.succeeded) _clearSaveFailure();
+        return result;
+      } on MockValidationException catch (e) {
+        return Outcome.failure(AppFailure(FailureCode.invalidData, cause: e));
+      } on Object catch (e) {
+        _emit(state.copyWith(notice: WorkspaceNotice.saveFailed));
+        return Outcome.failure(AppFailure(FailureCode.write, cause: e));
+      }
+    });
+    _mockChange = task;
+    unawaited(
+      task.then((_) {
+        if (identical(_mockChange, task)) _mockChange = null;
+      }),
+    );
+    return task;
+  }
+
+  @override
+  Future<Outcome<void>> saveMock(String id) => _commitMock(() async {
+    final draft = _snapshot.mockDrafts.where((d) => d.id == id).firstOrNull;
+    if (draft == null) {
+      return const Outcome.failure(AppFailure(FailureCode.notFound));
+    }
+    validateMockDefinition(draft, _snapshot.mocks);
+    for (final scenario in draft.scenarios) {
+      if (scenario.bodyType == 'json') {
+        MockGenerator().generate(scenario.body);
+      } else if (utf8.encode(scenario.body).length > mockMaxBytes) {
+        throw const MockValidationException('响应正文超过 2 MB');
+      }
+    }
+    final saved = [
+      for (final d in _snapshot.mocks)
+        if (d.id != id) d,
+      draft,
+    ];
+    await source.write(WorkspaceJson.encode(_snapshot.copyWith(mocks: saved)));
+    _change(_snapshot.copyWith(mocks: saved), persist: false);
+    return const Outcome.success();
+  });
+
+  @override
+  Future<Outcome<void>> deleteMock(String id) => _commitMock(() async {
+    WorkspaceSnapshot remove(WorkspaceSnapshot s) => s.copyWith(
+      mocks: s.mocks.where((d) => d.id != id).toList(),
+      mockDrafts: s.mockDrafts.where((d) => d.id != id).toList(),
+      mockActiveId: s.mockActiveId == id ? null : s.mockActiveId,
+    );
+    await source.write(WorkspaceJson.encode(remove(_snapshot)));
+    _change(remove(_snapshot), persist: false);
+    return const Outcome.success();
+  });
+
+  @override
+  Future<Outcome<void>> setMockPort(int port) => _commitMock(() async {
+    if (port < 1 || port > 65535) {
+      return const Outcome.failure(AppFailure(FailureCode.invalidData));
+    }
+    await source.write(
+      WorkspaceJson.encode(_snapshot.copyWith(mockPort: port)),
+    );
+    _change(_snapshot.copyWith(mockPort: port), persist: false);
+    return const Outcome.success();
+  });
   @override
   void dispose() {
     _disposed = true;

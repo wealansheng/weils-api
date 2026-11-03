@@ -1,5 +1,6 @@
 import '../../../../core/errors/app_failure.dart';
 import '../entities/workspace_entities.dart';
+import '../../../mock/domain/entities/mock_definition.dart';
 
 abstract interface class WorkspaceRepository {
   WorkspaceState get state;
@@ -25,5 +26,14 @@ abstract interface class WorkspaceRepository {
   });
   Future<Outcome<void>> flush({bool discardDirtyDrafts = false});
   void dismissNotice();
+  MockDefinition newMock();
+  void selectMock(String id);
+  void updateMockDraft(
+    String id,
+    MockDefinition Function(MockDefinition) update,
+  );
+  Future<Outcome<void>> saveMock(String id);
+  Future<Outcome<void>> deleteMock(String id);
+  Future<Outcome<void>> setMockPort(int port);
   void dispose();
 }
