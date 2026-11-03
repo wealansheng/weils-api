@@ -6,6 +6,7 @@ import '../domain/entities/mock_definition.dart';
 import '../domain/repositories/mock_server.dart';
 import '../domain/use_cases/generate_mock.dart';
 import '../domain/use_cases/match_mock.dart';
+import '../domain/use_cases/render_path_values.dart';
 
 class IoMockServer implements MockServer {
   HttpServer? _server;
@@ -97,7 +98,7 @@ class IoMockServer implements MockServer {
       final segments = request.uri.path == '/'
           ? <String>[]
           : request.uri.pathSegments;
-      final route = matchMockRoute(definitions, request.method, segments);
+      final route = resolveMockRoute(definitions, request.method, segments);
       if (route == null) {
         error(404, '未找到匹配的 Mock 路由');
         return;
@@ -107,7 +108,7 @@ class IoMockServer implements MockServer {
         (name, values) => headers[name] = values.join(', '),
       );
       final scenario = matchMockScenario(
-        route,
+        route.definition,
         headers,
         utf8.decode(bytes, allowMalformed: true),
       );
@@ -116,8 +117,15 @@ class IoMockServer implements MockServer {
         return;
       }
       final body = scenario.bodyType == 'json'
-          ? MockGenerator().generate(scenario.body)
-          : scenario.body;
+          ? MockGenerator().generate(
+              scenario.body,
+              pathParameters: route.pathParameters,
+            )
+          : renderMockPathValues(
+              scenario.body,
+              route.pathParameters,
+              maximumBytes: mockMaxBytes,
+            );
       final payload = utf8.encode(body);
       if (payload.length > mockMaxBytes) {
         error(500, '生成正文超过 2 MB');

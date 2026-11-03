@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:math';
 
 import '../entities/mock_definition.dart';
+import 'render_path_values.dart';
 
 const mockMaxBytes = 2 * 1024 * 1024;
 
@@ -14,8 +15,12 @@ class MockGenerator {
   final DateTime Function() now;
   Map<String, int> _increments = {};
   int _nodes = 0, _textBytes = 0;
+  Map<String, String>? _pathParameters;
 
-  String generate(String template) {
+  String generate(String template, {Map<String, String>? pathParameters}) {
+    _pathParameters = pathParameters == null
+        ? null
+        : Map.unmodifiable(pathParameters);
     if (utf8.encode(template).length > mockMaxBytes) _fail('模板超过 2 MB');
     _increments = {};
     _nodes = 0;
@@ -265,16 +270,30 @@ class MockGenerator {
   Object? _placeholders(String text) {
     if (RegExp(r'@(?:/|\.\.?/)').hasMatch(text)) _fail('暂不支持模板字段引用');
     final pieces = <Object?>[];
+    var pieceBytes = 0;
+    void addPiece(Object? value) {
+      pieceBytes += utf8
+          .encode(value is String ? value : jsonEncode(value))
+          .length;
+      if (pieceBytes > mockMaxBytes) _fail('生成正文超过 2 MB');
+      pieces.add(value);
+    }
+
+    String sourceText(String value) => renderMockPathValues(
+      value,
+      _pathParameters,
+      maximumBytes: mockMaxBytes,
+    );
     var cursor = 0;
     final pattern = RegExp(r'@([A-Za-z_][A-Za-z0-9_]*)');
     while (cursor < text.length) {
       final found = pattern.firstMatch(text.substring(cursor));
       if (found == null) {
-        pieces.add(text.substring(cursor));
+        addPiece(sourceText(text.substring(cursor)));
         break;
       }
       final start = cursor + found.start, nameEnd = cursor + found.end;
-      if (start > cursor) pieces.add(text.substring(cursor, start));
+      if (start > cursor) addPiece(sourceText(text.substring(cursor, start)));
       var end = nameEnd;
       var args = <Object?>[];
       if (end < text.length && text[end] == '(') {
@@ -303,7 +322,7 @@ class MockGenerator {
         args = _arguments(text.substring(argStart, end));
         end++;
       }
-      pieces.add(_call(found[1]!.toLowerCase(), args));
+      addPiece(_call(found[1]!.toLowerCase(), args));
       cursor = end;
     }
     if (pieces.isEmpty) return _track('');

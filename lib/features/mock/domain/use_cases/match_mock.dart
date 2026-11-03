@@ -2,33 +2,69 @@ import 'dart:convert';
 
 import '../entities/mock_definition.dart';
 
+class MockRouteMatch {
+  MockRouteMatch(this.definition, Map<String, String> pathParameters)
+    : pathParameters = Map.unmodifiable(pathParameters);
+
+  final MockDefinition definition;
+  final Map<String, String> pathParameters;
+}
+
+/// Existing callers can continue to retrieve just the definition.
 MockDefinition? matchMockRoute(
   Iterable<MockDefinition> definitions,
   String method,
   List<String> segments,
+) => resolveMockRoute(definitions, method, segments)?.definition;
+
+MockRouteMatch? resolveMockRoute(
+  Iterable<MockDefinition> definitions,
+  String method,
+  List<String> segments,
 ) {
-  final candidates = definitions.where((d) {
-    if (!d.enabled || d.method != method) return false;
+  final candidates = <MockRouteMatch>[];
+  for (final d in definitions) {
+    if (!d.enabled || d.method != method) continue;
     final route = d.path == '/' ? <String>[] : d.path.substring(1).split('/');
-    if (route.length != segments.length) return false;
-    for (var i = 0; i < route.length; i++) {
+    final wildcard = route.isNotEmpty && route.last == '*';
+    final prefixLength = wildcard ? route.length - 1 : route.length;
+    if (wildcard
+        ? segments.length < prefixLength ||
+              (prefixLength > 0 && segments.length == prefixLength)
+        : route.length != segments.length) {
+      continue;
+    }
+    final parameters = <String, String>{};
+    var matched = true;
+    for (var i = 0; i < prefixLength; i++) {
       if (route[i].startsWith(':')) {
-        if (segments[i].isEmpty) return false;
+        if (segments[i].isEmpty) {
+          matched = false;
+          break;
+        }
+        parameters[route[i].substring(1)] = segments[i];
       } else if (route[i] != segments[i]) {
-        return false;
+        matched = false;
+        break;
       }
     }
-    return true;
-  }).toList();
+    if (!matched) continue;
+    if (wildcard) parameters['*'] = segments.skip(prefixLength).join('/');
+    candidates.add(MockRouteMatch(d, parameters));
+  }
   candidates.sort((a, b) {
-    final aa = a.path.split('/'), bb = b.path.split('/');
-    for (var i = 0; i < aa.length; i++) {
-      final result = (aa[i].startsWith(':') ? 1 : 0).compareTo(
-        bb[i].startsWith(':') ? 1 : 0,
-      );
+    final aa = a.definition.path.split('/'), bb = b.definition.path.split('/');
+    int rank(String segment) => segment == '*'
+        ? 2
+        : segment.startsWith(':')
+        ? 1
+        : 0;
+    for (var i = 0; i < aa.length && i < bb.length; i++) {
+      final result = rank(aa[i]).compareTo(rank(bb[i]));
       if (result != 0) return result;
     }
-    return 0;
+    // Exact routes beat a trailing wildcard, including for an empty capture.
+    return aa.length.compareTo(bb.length);
   });
   return candidates.firstOrNull;
 }
