@@ -1,0 +1,21 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Weils API (Windows)",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main.dart",
+      "cwd": "${workspaceFolder}",
+      "deviceId": "windows",
+      "flutterMode": "debug",
+      "templateFor": "lib/main.dart",
+      "preLaunchTask": "weils: prepare Windows directories",
+      "env": {
+        "TEMP": "${workspaceFolder}/build/dev-temp",
+        "TMP": "${workspaceFolder}/build/dev-temp",
+        "WEILS_API_DATA_DIR": "${workspaceFolder}/.local-data"
+      }
+    }
+  ]
+}

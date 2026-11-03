@@ -1,6 +1,6 @@
 # Weils API
 
-面向个人开发者的 Flutter Windows HTTP 调试工具。使用浅色蓝灰界面，主要导航仅保留接口管理与请求历史。
+面向个人开发者的 Flutter Windows HTTP 调试工具。使用浅色蓝灰界面，提供接口管理、请求历史与本地 Mock 管理。
 
 ## 运行与构建
 
@@ -13,6 +13,10 @@ flutter build windows --release
 ```
 
 发布文件位于 `build/windows/x64/runner/Release/`。分发时需要保留整个目录，包括可执行文件旁的 DLL 和 `data/`，不能只复制 EXE。
+
+若开发进程遇到系统临时目录拒绝访问或本地数据保存失败，可运行 `.\tool\run_windows.ps1`，使用项目内可写目录并复制现有工作区；原数据保留，不修改系统权限。后续继续使用该脚本打开同一数据副本，细节见 [开发辅助](tool/README.md)。
+
+VS Code 已提供 `Weils API (Windows)` 启动配置，直接点击 `lib/main.dart` 上方的 Run / Debug 或按 F5，会自动准备目录并使用同一数据副本，无需先在终端运行脚本。
 
 ## 使用
 
@@ -30,6 +34,31 @@ flutter build windows --release
 - 历史保留当时的请求和响应，包括失败、超时和取消；编辑并重发创建独立草稿，不改写旧记录。
 - 设置中可调整超时（默认 30 秒）、清空历史，并通过 Windows 目录选择器更改数据保存目录；帮助文档内置在应用中。
 
+## 本地 Mock
+
+在“Mock 管理”中新建接口，填写 GET / POST / PUT / DELETE 与路径（如 `/users/:id`），编辑响应后保存。服务只使用已保存且启用的定义；草稿自动保留，保存失败继续使用旧定义。点击“启动服务”后可通过 `http://127.0.0.1:3000` 调用，端口可调整，重启应用不会自动启动服务。服务仅供本机访问，自动提供 CORS 与 OPTIONS 预检；入站请求不写入“请求历史”。
+
+固定路径段优先于参数段，忽略查询字符串，同方法下不允许重复路径结构。每个接口支持有序响应场景：Header 名称忽略大小写、值精确比较；Body 条件使用 JSON Pointer，如 `/user/id`，期望值填写 JSON，如 `1`、`true`、`"admin"` 或 `null`，缺失字段不等于 null。场景所有条件都满足时命中，无条件默认响应最后匹配，未匹配返回 JSON 404。响应可设置 200–599 状态码、Headers、JSON/文本与 0–300000 毫秒延迟；204/304 不返回正文。响应 Headers 使用字符串到字符串的 JSON 对象；Content-Length、Transfer-Encoding、Connection 和 CORS 控制响应头由服务管理。
+
+字段表可构建常量、随机值、对象与数组模板。点击“应用模板”并确认后替换响应正文，不从任意模板反推字段表。示例：
+
+```json
+{
+  "users|5-5": [
+    {
+      "id|+1": 1,
+      "name": "@cname",
+      "age": "@integer(18, 60)",
+      "role": "@pick(['admin', 'user'])"
+    }
+  ]
+}
+```
+
+支持 Mock.js 常用子集：字符串重复、数字范围及最多 12 位小数、数字/数组递增、布尔概率、对象属性抽取、数组重复或抽取；占位符为 `@integer`、`@natural`、`@float`、`@boolean`、`@string`、`@name`、`@cname`、`@email`、`@guid`、`@date`、`@time`、`@datetime` 和 `@pick`。完整占位符保留值类型，嵌入字符串则转为文本。`@name`、`@cname` 使用内置小型姓名词库；日期从 2000 年到当前时间随机选择。数组 `|1` 抽取元素，`|1-1` 保留单项数组；递增仅在本次生成中累计。生成预览与真实调用分别生成。普通字符串中的 `@单词` 也会识别为占位符。
+
+模板须为合法 JSON，不执行 JavaScript；函数、正则生成、字段引用和未列出的占位符会报错。深度最多 32 层，数组最多 1000 项，总节点最多 100000，整数范围限制 ±10¹²，请求正文、模板和生成正文均不超过 2 MB。读取请求正文的空闲超时为 30 秒。没有局域网访问、请求数据引用或复杂条件组。
+
 ## 本地数据
 
 默认目录为 `%APPDATA%\WeilsAPI`，使用 `workspace.json` 保存接口、草稿、Token、历史响应及设置。写入经过排队、临时文件落盘后替换，并保留上一份 `.bak`。损坏的 JSON 会保留为 `.corrupt-*` 文件并提示恢复情况；文件权限错误会显示保存失败，不标记接口已保存。
@@ -46,6 +75,7 @@ flutter build windows --release
 flutter analyze
 flutter test
 flutter test integration_test/windows_flow_test.dart -d windows
+flutter test integration_test/mock_windows_flow_test.dart -d windows
 ```
 
 核心测试通过本地 HTTP 服务验证真实请求、编码、认证、超时、取消、响应截断、持久化、草稿恢复和历史隔离。界面测试覆盖 1440×800 / 1280×720、关闭保护、设置及帮助。Windows 集成测试使用临时数据目录验证实际桌面应用的完整流程。

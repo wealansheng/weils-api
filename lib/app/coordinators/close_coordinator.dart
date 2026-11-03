@@ -5,14 +5,22 @@ import '../../features/workspace/domain/entities/workspace_entities.dart';
 import '../../features/workspace/domain/repositories/workspace_repository.dart';
 import '../../features/workspace/presentation/editor/view_models/request_execution_view_model.dart';
 import '../../shared/widgets/input_dialogs.dart';
+import '../../features/mock/domain/repositories/mock_server.dart';
 
 /// Application orchestration: prompts are UI, persistence remains a repository command.
 class CloseCoordinator {
-  CloseCoordinator(this.context, this.repository, this.execution, this.window);
+  CloseCoordinator(
+    this.context,
+    this.repository,
+    this.execution,
+    this.window, [
+    this.mockServer,
+  ]);
   final BuildContext context;
   final WorkspaceRepository repository;
   final RequestExecutionViewModel execution;
   final DesktopWindow window;
+  final MockServer? mockServer;
   bool _closing = false;
   WorkspaceSnapshot get snapshot => repository.state.snapshot;
   Future<bool> _saveDraft(RequestSpec draft) async =>
@@ -41,7 +49,7 @@ class CloseCoordinator {
         width: 370,
         child: Text(
           window
-              ? '有 ${snapshot.drafts.where(snapshot.isDirty).length} 个接口尚未保存。退出前可以保存接口，或放弃这些修改。'
+              ? '有 ${snapshot.drafts.where(snapshot.isDirty).length + snapshot.mockDrafts.where(snapshot.isMockDirty).length} 个接口（含 Mock）尚未保存。退出前可以保存接口，或放弃这些修改。'
               : '当前接口有未保存的修改。关闭后，放弃的内容将无法恢复。',
           style: const TextStyle(fontSize: 13, height: 1.8),
         ),
@@ -105,6 +113,16 @@ class CloseCoordinator {
               in snapshot.drafts.where(snapshot.isDirty).toList()) {
             if (!await _saveDraft(draft)) return false;
           }
+          for (final draft
+              in snapshot.mockDrafts.where(snapshot.isMockDirty).toList()) {
+            final result = await repository.saveMock(draft.id);
+            if (!result.succeeded) {
+              if (context.mounted && result.failure?.cause != null) {
+                _toast(result.failure!.cause.toString());
+              }
+              return false;
+            }
+          }
         }
         // Apply discard to the persisted snapshot only. If persistence fails
         // and the user cancels exit, their live edits remain available.
@@ -152,6 +170,7 @@ class CloseCoordinator {
         if (recovery == 'exit') break;
         if (recovery != 'retry') return;
       }
+      await mockServer?.stop();
       await window.close();
     } finally {
       _closing = false;

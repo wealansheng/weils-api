@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
 
-enum AppDestination { workspace, history }
+enum AppDestination { workspace, history, mock }
 
 class AppNavigation extends ChangeNotifier {
   AppDestination _destination = AppDestination.workspace;

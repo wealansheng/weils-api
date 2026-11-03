@@ -12,8 +12,12 @@ import '../../features/workspace/presentation/tabs/view_models/tabs_view_model.d
 import '../bootstrap/bootstrap_view_model.dart';
 import '../navigation/app_navigation.dart';
 import 'app_dependencies.dart';
+import '../../features/mock/domain/repositories/mock_server.dart';
+import '../../features/mock/presentation/view_models/mock_view_model.dart';
 
 List<SingleChildWidget> appProviders(AppDependencies dependencies) => [
+  Provider<MockServer>.value(value: dependencies.mockServer),
+  ChangeNotifierProvider<MockViewModel>.value(value: dependencies.mocking),
   Provider<WorkspaceRepository>.value(value: dependencies.workspace),
   Provider<RequestGateway>.value(value: dependencies.gateway),
   Provider<DesktopWindow>.value(value: dependencies.window),

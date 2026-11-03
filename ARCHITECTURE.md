@@ -39,6 +39,10 @@ lib/
         view_models/                 仓储投影监听基类
     settings/presentation/           设置对话框、临时选项与保存状态
     help/presentation/               内置帮助
+    mock/
+      domain/                        不可变路由/场景、JSON Pointer 匹配、JSON 模板生成及服务接口
+      data/                          Mock JSON 编解码、仅回环地址的 HttpServer 实现
+      presentation/                  独立列表、场景编辑、字段表与预览、服务运行状态
   shared/widgets/                    不引用业务实体的复用 UI
   layout/                            内容插槽、导航栏、桌面尺寸与分栏
 ```
@@ -80,6 +84,16 @@ lib/
 - `CloseCoordinator` 处理弹窗、保存、取消请求、失败重试和实际关闭窗口。领域层不接触 BuildContext。
 - `IoHttpTransport` 只提供通用 HTTP 能力；默认请求头、Bearer 与业务映射属于 workspace。MethodChannel 只出现在 `core/platform`。
 - 基础设施错误转换为 `AppFailure` / `Outcome`；工作区和设置展示层分别映射中文提示。数据恢复仍保留损坏文件并明确提示，读失败时暂停保存。
+
+## Mock 扩展
+
+Mock 定义、草稿、当前编辑 ID 和端口设置统一放在 `WorkspaceSnapshot`，所有修改仍通过 `WorkspaceRepository`。v1 JSON 增加可选的 `mocks`、`mockDrafts`、`mockActiveId`、`mockPort`，缺失时为空与 3000；草稿保留尚未解析成功的 Header JSON 文本。原子写入、恢复及目录迁移统一复用原工作区数据源。
+
+Mock 保存、删除与端口变更采用串行事务，写入成功后才发布新的已保存定义；普通 flush 等待事务，再捕获最新快照。保存期间新增编辑仍保留为草稿，失败不会让服务看到未落盘配置。退出的保存/放弃流程同时处理两类草稿。
+
+`AppDependencies` 创建并释放 `MockServer` 和应用级 `MockViewModel`。服务运行状态不持久化，页面切换不影响监听；正常退出先停止服务，依赖释放也会强制停止并取消延迟计时器。每个入站请求在读取正文前捕获已保存定义，不进入 `SendRequest` 或历史流程。
+
+路由/场景匹配与模板生成在纯 Dart 领域层，`IoMockServer` 在数据层使用 `dart:io`。生成器可以注入随机源和时钟，并逐分支检查未被随机选中的模板内容。展示层不引用数据实现，导航组装在 app 层，已有架构测试继续约束导入方向。
 
 ## 修改与验证
 

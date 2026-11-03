@@ -1,5 +1,6 @@
 import '../../../../core/errors/app_failure.dart';
 import '../../domain/entities/workspace_entities.dart';
+import '../../../mock/data/mock_json.dart';
 
 /// The v1 disk schema is isolated here; entities know nothing about JSON.
 abstract final class WorkspaceJson {
@@ -119,6 +120,14 @@ abstract final class WorkspaceJson {
           ? active
           : drafts.lastOrNull?.id,
       timeoutSeconds: (j['timeoutSeconds'] as int? ?? 30).clamp(1, 300),
+      mocks: (j['mocks'] as List? ?? [])
+          .map((d) => MockJson.decode(Map<String, dynamic>.from(d as Map)))
+          .toList(),
+      mockDrafts: (j['mockDrafts'] as List? ?? [])
+          .map((d) => MockJson.decode(Map<String, dynamic>.from(d as Map)))
+          .toList(),
+      mockActiveId: j['mockActiveId'] as String?,
+      mockPort: (j['mockPort'] as int? ?? 3000).clamp(1, 65535),
     );
   }
 
@@ -130,6 +139,11 @@ abstract final class WorkspaceJson {
     'history': s.history.map(historyJson).toList(),
     'activeId': s.activeId,
     'timeoutSeconds': s.timeoutSeconds,
+    if (s.mocks.isNotEmpty) 'mocks': s.mocks.map(MockJson.encode).toList(),
+    if (s.mockDrafts.isNotEmpty)
+      'mockDrafts': s.mockDrafts.map(MockJson.encode).toList(),
+    if (s.mockActiveId != null) 'mockActiveId': s.mockActiveId,
+    if (s.mockPort != 3000) 'mockPort': s.mockPort,
   };
 
   // Historical v1 files store rendered error strings rather than error codes.
