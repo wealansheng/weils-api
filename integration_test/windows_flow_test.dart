@@ -80,6 +80,23 @@ void main() {
           find.byKey(const ValueKey('request-url')),
           'http://127.0.0.1:${server.port}/users',
         );
+        await tester.tap(find.text('Headers').first);
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('添加Header'));
+        await tester.pumpAndSettle();
+        final header = c.active!.headers.last;
+        await tester.enterText(
+          find.byKey(ValueKey('${header.id}-name')),
+          'X-Client',
+        );
+        await tester.enterText(
+          find.byKey(ValueKey('${header.id}-value')),
+          'weils-local',
+        );
+        await tester.pumpAndSettle();
+        await capture('native-headers');
+        await tester.tap(find.text('Params'));
+        await tester.pumpAndSettle();
         await tester.tap(find.text('保存'));
         await tester.pumpAndSettle();
         await c.flush();

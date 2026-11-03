@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../core/models.dart';
+import '../core/request_headers.dart';
 import '../core/workspace_controller.dart';
 import 'common.dart';
 import 'theme.dart';
@@ -259,7 +260,11 @@ class _RequestEditorState extends State<RequestEditor> {
               120.0,
               double.infinity,
             );
-            final height = (_requestHeight ?? 184.0).clamp(120.0, maximum);
+            final height =
+                (_requestHeight ?? (_tab == 'Headers' ? 260.0 : 184.0)).clamp(
+                  120.0,
+                  maximum,
+                );
             return Column(
               children: [
                 SizedBox(
@@ -286,6 +291,8 @@ class _RequestEditorState extends State<RequestEditor> {
                               entries: r.headers,
                               onChanged: c.changed,
                               kind: 'Header',
+                              defaults: defaultRequestHeaders(r),
+                              stickyAdd: true,
                             ),
                             'Body' => _bodyEditor(),
                             _ => _authEditor(),
@@ -478,10 +485,87 @@ class EntryTable extends StatelessWidget {
     required this.entries,
     required this.onChanged,
     required this.kind,
+    this.defaults = const [],
+    this.stickyAdd = false,
   });
   final List<Entry> entries;
   final VoidCallback onChanged;
   final String kind;
+  final List<DefaultHeader> defaults;
+  final bool stickyAdd;
+  Widget _add() => Align(
+    alignment: Alignment.centerLeft,
+    child: TextButton.icon(
+      onPressed: () {
+        entries.add(Entry());
+        onChanged();
+      },
+      icon: const Icon(Icons.add, size: 14),
+      label: Text('添加$kind', style: const TextStyle(fontSize: 12)),
+    ),
+  );
+  Widget _defaultRow(DefaultHeader header) => Container(
+    key: ValueKey('default-header-${header.name.toLowerCase()}'),
+    height: 36,
+    decoration: const BoxDecoration(
+      border: Border(bottom: BorderSide(color: AppColors.line)),
+    ),
+    child: Row(
+      children: [
+        const SizedBox(
+          width: 36,
+          child: Tooltip(
+            message: '自动生成，添加同名 Header 可覆盖',
+            child: Icon(Icons.check_rounded, size: 15, color: AppColors.muted),
+          ),
+        ),
+        Expanded(
+          flex: 3,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 6),
+            child: SelectableText(
+              header.name,
+              maxLines: 1,
+              style: codeStyle.copyWith(
+                fontSize: 12,
+                height: 1.2,
+                color: AppColors.muted,
+              ),
+            ),
+          ),
+        ),
+        Expanded(
+          flex: 4,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 6),
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: SelectableText(
+                header.value,
+                maxLines: 1,
+                style: codeStyle.copyWith(
+                  fontSize: 12,
+                  height: 1.2,
+                  color: AppColors.muted,
+                ),
+              ),
+            ),
+          ),
+        ),
+        const Expanded(
+          flex: 2,
+          child: Padding(
+            padding: EdgeInsets.symmetric(horizontal: 6),
+            child: Text(
+              '默认',
+              style: TextStyle(fontSize: 11, color: AppColors.muted),
+            ),
+          ),
+        ),
+        const SizedBox(width: 30),
+      ],
+    ),
+  );
   @override
   Widget build(BuildContext context) => Column(
     children: [
@@ -521,22 +605,23 @@ class EntryTable extends StatelessWidget {
       ),
       Expanded(
         child: ListView.builder(
-          itemCount: entries.length + 1,
+          itemCount: defaults.length + entries.length + (stickyAdd ? 0 : 1),
+          findChildIndexCallback: (key) {
+            if (key is! ValueKey<String>) return null;
+            final automatic = defaults.indexWhere(
+              (h) => 'default-header-${h.name.toLowerCase()}' == key.value,
+            );
+            if (automatic >= 0) return automatic;
+            final custom = entries.indexWhere((e) => e.id == key.value);
+            return custom >= 0 ? defaults.length + custom : null;
+          },
           itemBuilder: (context, index) {
-            if (index == entries.length) {
-              return Align(
-                alignment: Alignment.centerLeft,
-                child: TextButton.icon(
-                  onPressed: () {
-                    entries.add(Entry());
-                    onChanged();
-                  },
-                  icon: const Icon(Icons.add, size: 14),
-                  label: Text('添加$kind', style: const TextStyle(fontSize: 12)),
-                ),
-              );
+            if (index < defaults.length) return _defaultRow(defaults[index]);
+            final customIndex = index - defaults.length;
+            if (customIndex == entries.length) {
+              return _add();
             }
-            final e = entries[index];
+            final e = entries[customIndex];
             Widget field(
               String key,
               String value,
@@ -617,6 +702,7 @@ class EntryTable extends StatelessWidget {
           },
         ),
       ),
+      if (stickyAdd) SizedBox(height: 34, child: _add()),
     ],
   );
 }

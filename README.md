@@ -18,6 +18,7 @@ flutter build windows --release
 
 - 新建 HTTP 接口，编辑名称、所在文件夹、方法和 URL。侧栏加号也可新建文件夹，右键接口或文件夹可以重命名、删除。
 - 支持 GET、POST、PUT、PATCH、DELETE、HEAD、OPTIONS；可编辑查询参数、Headers、JSON/文本 Body 和 Bearer Token。
+- Headers 中自动生成的属性和值使用灰色，自定义项使用正常颜色。Host、User-Agent、Accept-Encoding 以及适用的 Content-Type、Content-Length、Authorization 会随请求更新；启用的同名自定义项可覆盖默认值，名称不区分大小写。默认项不会被另存为自定义 Header。
 - 勾选的参数参与发送；参数表中的同名键覆盖 URL 中原有的同名查询参数，禁用该键会从发送地址移除。
 - `Ctrl + S` 保存接口，`Ctrl + Enter` 发送或取消当前请求，`Ctrl + N` 新建接口。
 - 编辑内容自动保留为草稿，发送请求不会自动保存接口定义。关闭标签页或 Windows 窗口时提示保存、放弃或取消。

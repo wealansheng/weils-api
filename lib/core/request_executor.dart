@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'models.dart';
+import 'request_headers.dart';
 
 class RequestOperation {
   RequestOperation(this._cancel, this.result);
@@ -18,28 +19,36 @@ class RequestExecutor {
     RequestSpec spec, {
     Duration timeout = const Duration(seconds: 30),
   }) {
-    final client = HttpClient()..connectionTimeout = timeout;
+    final client = HttpClient()
+      ..connectionTimeout = timeout
+      ..userAgent = defaultUserAgent;
     final cancelled = Completer<ResponseRecord>();
     final watch = Stopwatch()..start();
     bool stopped = false;
     Future<ResponseRecord> perform() async {
       final request = await client.openUrl(spec.method, spec.effectiveUri);
+      final payload = requestBodyBytes(spec);
+      // All body bytes are known up front. This also avoids an implicit
+      // chunked framing header missing from the editor's generated preview.
+      request.contentLength = payload.length;
+      for (final entry in defaultRequestHeaders(spec)) {
+        if (entry.name != 'Host' || entry.value != '根据 URL 自动生成') {
+          request.headers.set(entry.name, entry.value);
+        }
+      }
+      final applied = <String>{};
       for (final entry in spec.headers.where(
         (e) => e.enabled && e.name.trim().isNotEmpty,
       )) {
-        request.headers.add(entry.name.trim(), entry.value);
+        final name = entry.name.trim();
+        if (applied.add(name.toLowerCase())) {
+          request.headers.set(name, entry.value);
+        } else {
+          request.headers.add(name, entry.value);
+        }
       }
-      if (spec.authType == 'bearer' && spec.token.isNotEmpty) {
-        request.headers.set(
-          HttpHeaders.authorizationHeader,
-          'Bearer ${spec.token}',
-        );
-      }
-      if (spec.bodyType != 'none' && spec.body.isNotEmpty) {
-        request.headers.contentType ??= spec.bodyType == 'json'
-            ? ContentType.json
-            : ContentType('text', 'plain', charset: 'utf-8');
-        request.add(utf8.encode(spec.body));
+      if (payload.isNotEmpty) {
+        request.add(payload);
       }
       final response = await request.close();
       final bytes = <int>[];

@@ -6,9 +6,11 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:weils_api/core/models.dart';
+import 'package:weils_api/core/request_headers.dart';
 import 'package:weils_api/core/storage.dart';
 import 'package:weils_api/core/workspace_controller.dart';
 import 'package:weils_api/main.dart';
+import 'package:weils_api/ui/theme.dart';
 
 class MemoryStorage extends WorkspaceStorage {
   MemoryStorage() : super(directory: Directory('test-workspace'));
@@ -142,6 +144,82 @@ void main() {
   );
 
   for (final size in [const Size(1440, 800), const Size(1280, 720)]) {
+    testWidgets(
+      'default headers are gray, custom rows normal, overrides keep focus at ${size.width.toInt()}px',
+      (tester) async {
+        final c = await controller(tester);
+        final r = c.newRequest()
+          ..name = 'Header 展示'
+          ..url = 'https://api.example.com/users';
+        final custom = Entry(name: 'X-Client', value: 'weils-local');
+        r.headers.add(custom);
+        final key = GlobalKey();
+        await show(tester, c, key, size);
+        await tester.tap(find.text('Headers').first);
+        await tester.pumpAndSettle();
+        final hostRow = find.byKey(const ValueKey('default-header-host'));
+        final hostText = tester.widget<SelectableText>(
+          find
+              .descendant(of: hostRow, matching: find.byType(SelectableText))
+              .first,
+        );
+        expect(hostText.style!.color, AppColors.muted);
+        expect(find.text('api.example.com'), findsOneWidget);
+        expect(find.text(defaultUserAgent), findsOneWidget);
+        expect(find.text('gzip'), findsOneWidget);
+        final customName = tester.widget<EditableText>(
+          find.descendant(
+            of: find.byKey(ValueKey('${custom.id}-name')),
+            matching: find.byType(EditableText),
+          ),
+        );
+        expect(customName.style.color, AppColors.ink);
+        await capture(tester, key, 'headers-${size.width.toInt()}');
+        await tester.tap(find.text('添加Header'));
+        await tester.pumpAndSettle();
+        final override = r.headers.last;
+        final nameField = find.byKey(ValueKey('${override.id}-name'));
+        await tester.ensureVisible(nameField);
+        await tester.enterText(nameField, 'user-agent');
+        await tester.pumpAndSettle();
+        expect(
+          find.byKey(const ValueKey('default-header-user-agent')),
+          findsNothing,
+        );
+        expect(
+          tester
+              .widget<EditableText>(
+                find.descendant(
+                  of: nameField,
+                  matching: find.byType(EditableText),
+                ),
+              )
+              .focusNode
+              .hasFocus,
+          isTrue,
+        );
+        final check = find.descendant(
+          of: find.byKey(ValueKey(override.id)),
+          matching: find.byType(Checkbox),
+        );
+        await tester.ensureVisible(check);
+        await tester.tap(check);
+        await tester.pumpAndSettle();
+        expect(
+          find.byKey(const ValueKey('default-header-user-agent')),
+          findsOneWidget,
+        );
+        expect(
+          r.headers,
+          hasLength(2),
+          reason: 'automatic rows are not saved as custom headers',
+        );
+        expect(tester.takeException(), isNull);
+        await tester.runAsync(c.flush);
+        await tester.pumpWidget(const SizedBox.shrink());
+      },
+    );
+
     testWidgets(
       'request editor and immutable history replay at ${size.width.toInt()}px',
       (tester) async {

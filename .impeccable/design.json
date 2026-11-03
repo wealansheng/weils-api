@@ -340,7 +340,8 @@
       "Do use the existing white, shell, selection and line roles for pane hierarchy.",
       "Do keep request and response together and allow code content to scroll in both axes.",
       "Do pair status and method colors with readable text labels.",
-      "Do retain the confirmed Chinese navigation and utility labels."
+      "Do retain the confirmed Chinese navigation and utility labels.",
+      "Do render generated request-header names and values in muted slate, and editable custom headers in primary ink; reuse existing tokens."
     ],
     "donts": [
       "Don't introduce branch or environment controls, extra rail destinations, or extra shell utility entries.",

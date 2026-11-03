@@ -189,6 +189,8 @@ Restrained and task-focused. Primary buttons use cobalt, white text, the control
 
 White filled outlined fields use the control radius and line stroke, switching to the focused cobalt stroke. Search is a compact 34px variant with 12px text. The request name uses an underline on focus instead of the standard outline. Parameter/header cells also use underline-style editing. The composite URL row has one surrounding border, an internal method separator and monospace URL text.
 
+Generated request-header names and values are read-only, selectable and use `muted`; their description reads “默认”. User-added header cells retain `ink` and ordinary editable controls. An enabled same-name custom header replaces the generated row case-insensitively; disabling it restores the generated row. The Headers section keeps “添加Header” visible beneath its scrollable rows. Its initial request-pane height is 260px, while other request sections start at 184px; the divider remains resizable.
+
 ### Navigation
 
 The only rail destinations are **接口管理** and **请求历史**. Each destination is a 60 × 67px rounded target with a 23px Material icon and an 11px caption. Selected state combines selection fill, cobalt text/icon and semibold caption. Settings remains top-right; help remains bottom-right. These are confirmed shell commitments.

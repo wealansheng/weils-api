@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:weils_api/core/models.dart';
 import 'package:weils_api/core/request_executor.dart';
+import 'package:weils_api/core/request_headers.dart';
 import 'package:weils_api/core/storage.dart';
 import 'package:weils_api/core/workspace_controller.dart';
 
@@ -47,6 +48,86 @@ void main() {
         ..add(Entry(name: 'old', enabled: false));
       expect(spec.effectiveUri.queryParameters, isEmpty);
       expect(spec.effectiveUri.toString(), 'http://localhost/');
+    },
+  );
+
+  test('generated headers follow URL, UTF-8 body and enabled case-insensitive overrides', () {
+    final r = RequestSpec(
+      url: 'https://example.com:8443/users',
+      method: 'POST',
+      bodyType: 'json',
+      body: '{"name":"中文"}',
+    );
+    Map<String, String> defaults() => {
+      for (final h in defaultRequestHeaders(r)) h.name.toLowerCase(): h.value,
+    };
+    expect(defaults()['host'], 'example.com:8443');
+    expect(defaults()['user-agent'], defaultUserAgent);
+    expect(defaults()['content-length'], utf8.encode(r.body).length.toString());
+    expect(defaults()['content-type'], ContentType.json.toString());
+    final custom = Entry(name: 'uSeR-aGeNt', value: 'MyClient');
+    r.headers.add(custom);
+    expect(defaults().containsKey('user-agent'), isFalse);
+    custom.enabled = false;
+    expect(defaults()['user-agent'], defaultUserAgent);
+    r.url = 'http://[::1]:8080/users';
+    expect(defaults()['host'], '[::1]:8080');
+    r.url = 'https://example.com:443/users';
+    expect(defaults()['host'], 'example.com');
+    expect(
+      r.headers,
+      hasLength(1),
+      reason: 'generated rows must not become custom/persisted rows',
+    );
+  });
+
+  test(
+    'wire headers match preview and custom headers replace automatic values',
+    () async {
+      final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+      final received = <Map<String, String>>[];
+      server.listen((request) async {
+        final headers = <String, String>{};
+        request.headers.forEach(
+          (key, values) => headers[key] = values.join(', '),
+        );
+        received.add(headers);
+        await request.drain<void>();
+        request.response.write('ok');
+        await request.response.close();
+      });
+      try {
+        final r = RequestSpec(
+          url: 'http://127.0.0.1:${server.port}/users',
+          method: 'POST',
+          bodyType: 'json',
+          body: '{"text":"中文"}',
+          authType: 'bearer',
+          token: 'auto-token',
+        );
+        final expected = defaultRequestHeaders(r);
+        final result = await RequestExecutor().start(r).result;
+        expect(result.statusCode, 200);
+        for (final h in expected) {
+          expect(received.last[h.name.toLowerCase()], h.value, reason: h.name);
+        }
+        r.headers.addAll([
+          Entry(name: 'USER-AGENT', value: 'Custom/1'),
+          Entry(name: 'Accept-Encoding', value: 'identity'),
+          Entry(name: 'CONTENT-TYPE', value: 'application/custom'),
+          Entry(name: 'Authorization', value: 'Custom token'),
+        ]);
+        expect((await RequestExecutor().start(r).result).statusCode, 200);
+        expect(received.last['user-agent'], 'Custom/1');
+        expect(received.last['accept-encoding'], 'identity');
+        expect(received.last['content-type'], 'application/custom');
+        expect(received.last['authorization'], 'Custom token');
+        r.headers.first.enabled = false;
+        expect((await RequestExecutor().start(r).result).statusCode, 200);
+        expect(received.last['user-agent'], defaultUserAgent);
+      } finally {
+        await server.close(force: true);
+      }
     },
   );
 
