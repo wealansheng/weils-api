@@ -856,46 +856,59 @@ class _WorkspacePageState extends State<WorkspacePage> {
           decoration: const BoxDecoration(
             border: Border(bottom: BorderSide(color: AppColors.line)),
           ),
-          child: ListView(
+          child: ReorderableListView.builder(
+            key: const ValueKey('request-tabs'),
             scrollDirection: Axis.horizontal,
-            children: [
-              WorkTab(
-                label: '概览',
-                selected: c.activeId == null,
-                onTap: () => c.selectTab(null),
+            buildDefaultDragHandles: false,
+            onReorderItem: c.reorderDraft,
+            proxyDecorator: (child, index, animation) => Material(
+              type: MaterialType.transparency,
+              child: MouseRegion(
+                cursor: SystemMouseCursors.grabbing,
+                child: child,
               ),
-              for (final draft in c.drafts)
-                WorkTab(
-                  label: draft.name.isEmpty ? '未命名接口' : draft.name,
-                  selected: c.activeId == draft.id,
-                  onTap: () => c.selectTab(draft.id),
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (c.isDirty(draft))
-                        Container(
-                          width: 5,
-                          height: 5,
-                          margin: const EdgeInsets.only(right: 5),
-                          decoration: const BoxDecoration(
-                            color: AppColors.primary,
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                      SizedBox(
-                        width: 21,
-                        height: 25,
-                        child: IconButton(
-                          tooltip: '关闭标签页',
-                          padding: EdgeInsets.zero,
-                          onPressed: () => _closeDraft(draft),
-                          icon: const Icon(Icons.close, size: 13),
+            ),
+            header: WorkTab(
+              label: '概览',
+              selected: c.activeId == null,
+              onTap: () => c.selectTab(null),
+            ),
+            itemCount: c.drafts.length,
+            itemBuilder: (context, index) {
+              final draft = c.drafts[index];
+              return WorkTab(
+                key: ValueKey('request-tab-${draft.id}'),
+                label: draft.name.isEmpty ? '未命名接口' : draft.name,
+                selected: c.activeId == draft.id,
+                reorderIndex: index,
+                onTap: () => c.selectTab(draft.id),
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (c.isDirty(draft))
+                      Container(
+                        width: 5,
+                        height: 5,
+                        margin: const EdgeInsets.only(right: 5),
+                        decoration: const BoxDecoration(
+                          color: AppColors.primary,
+                          shape: BoxShape.circle,
                         ),
                       ),
-                    ],
-                  ),
+                    SizedBox(
+                      width: 21,
+                      height: 25,
+                      child: IconButton(
+                        tooltip: '关闭标签页',
+                        padding: EdgeInsets.zero,
+                        onPressed: () => _closeDraft(draft),
+                        icon: const Icon(Icons.close, size: 13),
+                      ),
+                    ),
+                  ],
                 ),
-            ],
+              );
+            },
           ),
         ),
         Expanded(

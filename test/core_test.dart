@@ -313,6 +313,49 @@ void main() {
   );
 
   test(
+    'tab order persists without changing active request or draft content',
+    () async {
+      final first = c.newRequest()..name = 'first';
+      final second = c.newRequest()..name = 'second';
+      final third = c.newRequest()..name = 'third';
+      for (final draft in [first, second, third]) {
+        await c.save(draft);
+      }
+      first.body = 'unsaved body';
+      c.reorderDraft(0, 2);
+      expect(c.drafts, [second, third, first]);
+      expect(c.active, same(third));
+      expect(c.isDirty(first), isTrue);
+      c.reorderDraft(2, 0);
+      expect(c.drafts, [first, second, third]);
+      c.reorderDraft(2, 1);
+      c.reorderDraft(1, 1);
+      await c.flush();
+      final restored = WorkspaceController(
+        storage: WorkspaceStorage(directory: directory),
+      );
+      try {
+        await restored.initialize();
+        expect(restored.drafts.map((r) => r.id), [
+          first.id,
+          third.id,
+          second.id,
+        ]);
+        expect(restored.active!.id, third.id);
+        expect(restored.drafts.first.body, 'unsaved body');
+        expect(restored.requests.map((r) => r.id), [
+          first.id,
+          second.id,
+          third.id,
+        ]);
+        expect(restored.requests.first.body, isEmpty);
+      } finally {
+        restored.dispose();
+      }
+    },
+  );
+
+  test(
     'serialized writes keep valid data and recover corrupt file from backup',
     () async {
       c.newRequest().name = 'first';

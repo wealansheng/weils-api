@@ -80,6 +80,87 @@ void main() {
           find.byKey(const ValueKey('request-url')),
           'http://127.0.0.1:${server.port}/users',
         );
+        final original = c.active!;
+        final extra = c.newRequest()..name = '用户详情';
+        final extraLast = c.newRequest()..name = '更新用户';
+        c.selectTab(original.id);
+        await tester.pumpAndSettle();
+        final originalTab = find.byKey(ValueKey('request-tab-${original.id}'));
+        final originalLabel = find.descendant(
+          of: originalTab,
+          matching: find.text(original.name),
+        );
+        final start = tester.getCenter(originalLabel);
+        final lastRect = tester.getRect(
+          find.byKey(ValueKey('request-tab-${extraLast.id}')),
+        );
+        final end = Offset(lastRect.right - 8, start.dy);
+        final gesture = await tester.startGesture(
+          start,
+          kind: ui.PointerDeviceKind.mouse,
+        );
+        for (var step = 1; step <= 16; step++) {
+          await gesture.moveTo(Offset.lerp(start, end, step / 16)!);
+          await tester.pump(const Duration(milliseconds: 30));
+        }
+        await tester.pump(const Duration(milliseconds: 350));
+        await gesture.up();
+        await tester.pumpAndSettle();
+        expect(c.drafts, [extra, extraLast, original]);
+        expect(c.active, same(original));
+        await capture('native-tabs-reordered');
+        await c.flush();
+        final reordered = WorkspaceController(
+          storage: WorkspaceStorage(directory: directory),
+        );
+        await reordered.initialize();
+        expect(reordered.drafts.map((r) => r.id), [
+          extra.id,
+          extraLast.id,
+          original.id,
+        ]);
+        expect(reordered.active!.id, original.id);
+        reordered.dispose();
+        c.closeDraft(extra.id);
+        c.closeDraft(extraLast.id);
+        await tester.pumpAndSettle();
+        final method = find.byKey(const ValueKey('request-method-trigger'));
+        Rect? firstMethodRow;
+        for (final value in ['OPTIONS', 'GET']) {
+          await tester.tap(method);
+          await tester.pumpAndSettle();
+          final first = tester.getRect(
+            find.byKey(const ValueKey('request-method-option-GET')),
+          );
+          expect(first.top, greaterThan(tester.getRect(method).bottom));
+          if (firstMethodRow != null) expect(first, firstMethodRow);
+          firstMethodRow = first;
+          if (value == 'GET') await capture('native-dropdown-method');
+          await tester.tap(
+            find.byKey(ValueKey('request-method-option-$value')),
+          );
+          await tester.pumpAndSettle();
+          expect(c.active!.method, value);
+        }
+        final folder = c.addFolder('用户服务');
+        await tester.pumpAndSettle();
+        final folderTrigger = find.byKey(
+          const ValueKey('request-folder-trigger'),
+        );
+        await tester.tap(folderTrigger);
+        await tester.pumpAndSettle();
+        await tester.tap(
+          find.byKey(ValueKey('request-folder-option-${folder.id}')),
+        );
+        await tester.pumpAndSettle();
+        expect(c.active!.folderId, folder.id);
+        await tester.tap(folderTrigger);
+        await tester.pumpAndSettle();
+        await capture('native-dropdown-folder');
+        await tester.tap(
+          find.byKey(const ValueKey('request-folder-option-default')),
+        );
+        await tester.pumpAndSettle();
         await tester.tap(find.text('Headers').first);
         await tester.pumpAndSettle();
         await tester.tap(find.text('添加Header'));

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../core/models.dart';
 import '../core/request_headers.dart';
 import '../core/workspace_controller.dart';
+import 'anchored_select.dart';
 import 'common.dart';
 import 'theme.dart';
 
@@ -48,6 +50,21 @@ class _RequestEditorState extends State<RequestEditor> {
   void didUpdateWidget(RequestEditor old) {
     super.didUpdateWidget(old);
     if (_name.text != r.name) _name.text = r.name;
+  }
+
+  void _insertBodyIndent() {
+    final value = _body.value;
+    final selection = value.selection;
+    final start = selection.isValid ? selection.start : value.text.length;
+    final end = selection.isValid ? selection.end : value.text.length;
+    _body.value = value.copyWith(
+      text: value.text.replaceRange(start, end, '  '),
+      selection: TextSelection.collapsed(offset: start + 2),
+      composing: TextRange.empty,
+    );
+    // Controller updates do not invoke TextField.onChanged.
+    r.body = _body.text;
+    c.changed();
   }
 
   @override
@@ -96,33 +113,19 @@ class _RequestEditorState extends State<RequestEditor> {
             const Spacer(),
             Icon(Icons.folder_outlined, size: 15, color: AppColors.muted),
             const SizedBox(width: 5),
-            ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 130),
-              child: DropdownButtonHideUnderline(
-                child: DropdownButton<String>(
-                  value: r.folderId,
-                  isDense: true,
-                  style: const TextStyle(
-                    fontFamily: 'Microsoft YaHei',
-                    fontSize: 12,
-                    color: AppColors.muted,
-                  ),
-                  items: c.folders
-                      .map(
-                        (f) => DropdownMenuItem(
-                          value: f.id,
-                          child: Text(f.name, overflow: TextOverflow.ellipsis),
-                        ),
-                      )
-                      .toList(),
-                  onChanged: (v) {
-                    if (v != null) {
-                      r.folderId = v;
-                      c.changed();
-                    }
-                  },
-                ),
-              ),
+            AnchoredSelect(
+              id: 'request-folder',
+              label: '所属模块',
+              value: r.folderId,
+              width: 130,
+              menuWidth: 220,
+              options: c.folders
+                  .map((f) => SelectOption(f.id, f.name))
+                  .toList(),
+              onChanged: (v) {
+                r.folderId = v;
+                c.changed();
+              },
             ),
             const SizedBox(width: 16),
             Tooltip(
@@ -149,46 +152,32 @@ class _RequestEditorState extends State<RequestEditor> {
                   ),
                   child: Row(
                     children: [
-                      SizedBox(
-                        width: 105,
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 13),
-                          child: DropdownButtonHideUnderline(
-                            child: DropdownButton<String>(
-                              value: r.method,
-                              isExpanded: true,
-                              icon: const Icon(Icons.expand_more, size: 17),
-                              style: TextStyle(
-                                fontFamily: 'Consolas',
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                                color: methodColor(r.method),
-                              ),
-                              items:
-                                  [
-                                        'GET',
-                                        'POST',
-                                        'PUT',
-                                        'PATCH',
-                                        'DELETE',
-                                        'HEAD',
-                                        'OPTIONS',
-                                      ]
-                                      .map(
-                                        (m) => DropdownMenuItem(
-                                          value: m,
-                                          child: Text(m),
-                                        ),
-                                      )
-                                      .toList(),
-                              onChanged: (v) {
-                                if (v != null) {
-                                  r.method = v;
-                                  c.changed();
-                                }
-                              },
-                            ),
-                          ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 3),
+                        child: AnchoredSelect(
+                          id: 'request-method',
+                          label: '请求方式',
+                          value: r.method,
+                          width: 103,
+                          height: 38,
+                          menuWidth: 156,
+                          monospace: true,
+                          options: [
+                            for (final m in [
+                              'GET',
+                              'POST',
+                              'PUT',
+                              'PATCH',
+                              'DELETE',
+                              'HEAD',
+                              'OPTIONS',
+                            ])
+                              SelectOption(m, m, color: methodColor(m)),
+                          ],
+                          onChanged: (v) {
+                            r.method = v;
+                            c.changed();
+                          },
                         ),
                       ),
                       Container(width: 1, height: 24, color: AppColors.line),
@@ -355,27 +344,21 @@ class _RequestEditorState extends State<RequestEditor> {
         height: 38,
         child: Row(
           children: [
-            DropdownButtonHideUnderline(
-              child: DropdownButton<String>(
-                value: r.bodyType,
-                isDense: true,
-                style: const TextStyle(
-                  fontFamily: 'Microsoft YaHei',
-                  fontSize: 12,
-                  color: AppColors.ink,
-                ),
-                items: const [
-                  DropdownMenuItem(value: 'none', child: Text('无 Body')),
-                  DropdownMenuItem(value: 'json', child: Text('JSON')),
-                  DropdownMenuItem(value: 'text', child: Text('原始文本')),
-                ],
-                onChanged: (v) {
-                  if (v != null) {
-                    r.bodyType = v;
-                    c.changed();
-                  }
-                },
-              ),
+            AnchoredSelect(
+              id: 'request-body-type',
+              label: '正文类型',
+              value: r.bodyType,
+              width: 120,
+              menuWidth: 160,
+              options: const [
+                SelectOption('none', '无 Body'),
+                SelectOption('json', 'JSON'),
+                SelectOption('text', '原始文本'),
+              ],
+              onChanged: (v) {
+                r.bodyType = v;
+                c.changed();
+              },
             ),
             const Spacer(),
             if (r.bodyType == 'json')
@@ -398,23 +381,29 @@ class _RequestEditorState extends State<RequestEditor> {
                   style: TextStyle(fontSize: 12, color: AppColors.muted),
                 ),
               )
-            : TextField(
-                key: const ValueKey('request-body'),
-                controller: _body,
-                expands: true,
-                maxLines: null,
-                textAlignVertical: TextAlignVertical.top,
-                style: codeStyle,
-                decoration: InputDecoration(
-                  hintText: r.bodyType == 'json'
-                      ? '{\n  "key": "value"\n}'
-                      : '输入请求正文',
-                  contentPadding: const EdgeInsets.all(12),
-                ),
-                onChanged: (v) {
-                  r.body = v;
-                  c.changed();
+            : CallbackShortcuts(
+                bindings: {
+                  const SingleActivator(LogicalKeyboardKey.tab):
+                      _insertBodyIndent,
                 },
+                child: TextField(
+                  key: const ValueKey('request-body'),
+                  controller: _body,
+                  expands: true,
+                  maxLines: null,
+                  textAlignVertical: TextAlignVertical.top,
+                  style: codeStyle,
+                  decoration: InputDecoration(
+                    hintText: r.bodyType == 'json'
+                        ? '{\n  "key": "value"\n}'
+                        : '输入请求正文',
+                    contentPadding: const EdgeInsets.all(12),
+                  ),
+                  onChanged: (v) {
+                    r.body = v;
+                    c.changed();
+                  },
+                ),
               ),
       ),
       const SizedBox(height: 6),
@@ -429,26 +418,20 @@ class _RequestEditorState extends State<RequestEditor> {
             width: 82,
             child: Text('认证方式', style: TextStyle(fontSize: 12)),
           ),
-          DropdownButtonHideUnderline(
-            child: DropdownButton<String>(
-              value: r.authType,
-              isDense: true,
-              style: const TextStyle(
-                fontFamily: 'Microsoft YaHei',
-                fontSize: 12,
-                color: AppColors.ink,
-              ),
-              items: const [
-                DropdownMenuItem(value: 'none', child: Text('无认证')),
-                DropdownMenuItem(value: 'bearer', child: Text('Bearer Token')),
-              ],
-              onChanged: (v) {
-                if (v != null) {
-                  r.authType = v;
-                  c.changed();
-                }
-              },
-            ),
+          AnchoredSelect(
+            id: 'request-auth-type',
+            label: '认证方式',
+            value: r.authType,
+            width: 154,
+            menuWidth: 180,
+            options: const [
+              SelectOption('none', '无认证'),
+              SelectOption('bearer', 'Bearer Token'),
+            ],
+            onChanged: (v) {
+              r.authType = v;
+              c.changed();
+            },
           ),
         ],
       ),

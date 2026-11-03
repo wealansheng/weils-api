@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -142,6 +143,322 @@ void main() {
       await tester.pumpWidget(const SizedBox.shrink());
     },
   );
+
+  for (final width in [1440.0, 1280.0, 1000.0]) {
+    testWidgets('select menus stay anchored across selections at $width', (
+      tester,
+    ) async {
+      final c = await controller(tester);
+      c.folders.addAll([
+        Folder('second', '用户服务'),
+        Folder('last', '这是一段很长的模块名称，用于验证菜单宽度和省略显示'),
+      ]);
+      final r = c.newRequest();
+      final key = GlobalKey();
+      await show(tester, c, key, Size(width, width == 1000 ? 650 : 800));
+      final method = find.byKey(const ValueKey('request-method-trigger'));
+      final methodTrigger = tester.getRect(method);
+      Rect? methodRow;
+      for (final value in ['PATCH', 'OPTIONS', 'GET']) {
+        await tester.tap(method);
+        await tester.pumpAndSettle();
+        final first = tester.getRect(
+          find.byKey(const ValueKey('request-method-option-GET')),
+        );
+        expect(first.top, greaterThanOrEqualTo(methodTrigger.bottom + 4));
+        expect(first.left, closeTo(methodTrigger.left + 5, 1));
+        expect(first.width, closeTo(146, 1));
+        if (methodRow != null) expect(first, methodRow);
+        methodRow = first;
+        if (value == 'GET' && width != 1000) {
+          await capture(tester, key, 'dropdown-method-${width.toInt()}');
+        }
+        await tester.tap(find.byKey(ValueKey('request-method-option-$value')));
+        await tester.pumpAndSettle();
+        expect(r.method, value);
+        expect(tester.getRect(method), methodTrigger);
+        expect(find.byType(MenuItemButton), findsNothing);
+      }
+      final folder = find.byKey(const ValueKey('request-folder-trigger'));
+      final folderTrigger = tester.getRect(folder);
+      Rect? folderRow;
+      for (final value in ['second', 'last', 'default']) {
+        await tester.tap(folder);
+        await tester.pumpAndSettle();
+        final first = tester.getRect(
+          find.byKey(const ValueKey('request-folder-option-default')),
+        );
+        expect(first.top, greaterThanOrEqualTo(folderTrigger.bottom + 4));
+        expect(first.width, closeTo(210, 1));
+        if (folderRow != null) expect(first, folderRow);
+        folderRow = first;
+        if (value == 'default' && width != 1000) {
+          await capture(tester, key, 'dropdown-folder-${width.toInt()}');
+        }
+        await tester.tap(find.byKey(ValueKey('request-folder-option-$value')));
+        await tester.pumpAndSettle();
+        expect(r.folderId, value);
+        expect(tester.getRect(folder), folderTrigger);
+      }
+      await tester.tap(method);
+      await tester.pumpAndSettle();
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.pumpAndSettle();
+      expect(find.byType(MenuItemButton), findsNothing);
+      await tester.tap(folder);
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('request-url')));
+      await tester.pumpAndSettle();
+      expect(find.byType(MenuItemButton), findsNothing);
+      expect(tester.takeException(), isNull);
+      await tester.runAsync(c.flush);
+      await tester.pumpWidget(const SizedBox.shrink());
+    });
+  }
+
+  for (final width in [1440.0, 1000.0]) {
+    testWidgets(
+      'mouse reorders tabs and selection preserves typography at $width',
+      (tester) async {
+        final c = await controller(tester);
+        final first = c.newRequest()..name = '用户列表';
+        final second = c.newRequest()..name = '创建用户';
+        final third = c.newRequest()..name = '这是一个很长的接口标签名称，需要显示省略号';
+        final key = GlobalKey();
+        await show(tester, c, key, Size(width, 720));
+        Finder tab(RequestSpec r) =>
+            find.byKey(ValueKey('request-tab-${r.id}'));
+        Finder label(RequestSpec r) =>
+            find.descendant(of: tab(r), matching: find.text(r.name));
+        final originalRects = [
+          for (final r in [first, second, third]) tester.getRect(tab(r)),
+        ];
+        final inactiveStyle = tester.widget<Text>(label(first)).style!;
+        await tester.tap(label(first));
+        await tester.pumpAndSettle();
+        expect(c.active, same(first));
+        final activeStyle = tester.widget<Text>(label(first)).style!;
+        expect(activeStyle.fontSize, inactiveStyle.fontSize);
+        expect(activeStyle.fontWeight, inactiveStyle.fontWeight);
+        expect(activeStyle.fontFamily, inactiveStyle.fontFamily);
+        expect(activeStyle.height, inactiveStyle.height);
+        for (var i = 0; i < 3; i++) {
+          expect(
+            tester.getRect(tab([first, second, third][i])),
+            originalRects[i],
+          );
+        }
+        await tester.tap(label(first));
+        await tester.pumpAndSettle();
+        expect(tester.getRect(tab(first)), originalRects.first);
+
+        Future<void> move(
+          RequestSpec from,
+          RequestSpec to, {
+          required bool right,
+        }) async {
+          final start = tester.getCenter(label(from));
+          final target = tester.getRect(tab(to));
+          final end = Offset(
+            right ? target.right - 8 : target.left + 8,
+            start.dy,
+          );
+          final gesture = await tester.startGesture(
+            start,
+            kind: ui.PointerDeviceKind.mouse,
+          );
+          for (var step = 1; step <= 16; step++) {
+            await gesture.moveTo(Offset.lerp(start, end, step / 16)!);
+            await tester.pump(const Duration(milliseconds: 30));
+          }
+          await tester.pump(const Duration(milliseconds: 350));
+          await gesture.up();
+          await tester.pumpAndSettle();
+        }
+
+        await move(first, third, right: true);
+        expect(c.drafts, [second, third, first]);
+        expect(c.active, same(first));
+        await capture(tester, key, 'tabs-reordered-${width.toInt()}');
+        await move(first, second, right: false);
+        expect(c.drafts, [first, second, third]);
+        await move(second, first, right: false);
+        expect(c.drafts, [second, first, third]);
+        expect(c.active, same(first));
+        await tester.tap(
+          find.descendant(of: tab(second), matching: find.byTooltip('关闭标签页')),
+        );
+        await tester.pumpAndSettle();
+        expect(find.text('保存未完成的修改？'), findsOneWidget);
+        await tester.tap(find.text('放弃修改'));
+        await tester.pumpAndSettle();
+        expect(c.drafts, [first, third]);
+        expect(c.active, same(first));
+        expect(tester.takeException(), isNull);
+        await tester.runAsync(c.flush);
+        await tester.pumpWidget(const SizedBox.shrink());
+      },
+    );
+  }
+
+  testWidgets('overflowing tab bar scrolls and still allows mouse reordering', (
+    tester,
+  ) async {
+    final c = await controller(tester);
+    final drafts = [
+      for (var i = 0; i < 12; i++) c.newRequest()..name = '接口标签 $i',
+    ];
+    await show(tester, c, GlobalKey(), const Size(1000, 650));
+    await tester.sendEventToBinding(
+      PointerScrollEvent(
+        position: tester.getCenter(find.byKey(const ValueKey('request-tabs'))),
+        scrollDelta: const Offset(1600, 0),
+      ),
+    );
+    await tester.pumpAndSettle();
+    final lastLabel = find.descendant(
+      of: find.byKey(ValueKey('request-tab-${drafts.last.id}')),
+      matching: find.text(drafts.last.name),
+    );
+    expect(lastLabel.hitTestable(), findsOneWidget);
+    final start = tester.getCenter(lastLabel);
+    final gesture = await tester.startGesture(
+      start,
+      kind: ui.PointerDeviceKind.mouse,
+    );
+    for (var step = 1; step <= 16; step++) {
+      await gesture.moveTo(start - Offset(180 * step / 16, 0));
+      await tester.pump(const Duration(milliseconds: 30));
+    }
+    await tester.pump(const Duration(milliseconds: 350));
+    await gesture.up();
+    await tester.pumpAndSettle();
+    expect(c.drafts.indexOf(drafts.last), lessThan(11));
+    expect(c.active, same(drafts.last));
+    expect(c.drafts.map((r) => r.id).toSet(), drafts.map((r) => r.id).toSet());
+    expect(tester.takeException(), isNull);
+    await tester.runAsync(c.flush);
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
+  testWidgets('Body and authentication selects support keyboard selection', (
+    tester,
+  ) async {
+    final c = await controller(tester);
+    final r = c.newRequest();
+    await show(tester, c, GlobalKey(), const Size(1280, 720));
+    await tester.tap(find.text('Body').first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('request-body-type-trigger')));
+    await tester.pumpAndSettle();
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+    await tester.pumpAndSettle();
+    expect(r.bodyType, 'json');
+    expect(find.byKey(const ValueKey('request-body')), findsOneWidget);
+    await tester.tap(find.text('认证'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('request-auth-type-trigger')));
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.byKey(const ValueKey('request-auth-type-option-bearer')),
+    );
+    await tester.pumpAndSettle();
+    expect(r.authType, 'bearer');
+    expect(find.text('Token'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+    await tester.runAsync(c.flush);
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
+  testWidgets('many modules scroll within a bounded menu', (tester) async {
+    final c = await controller(tester);
+    for (var i = 0; i < 30; i++) {
+      c.folders.add(Folder('folder-$i', '模块 $i'));
+    }
+    final r = c.newRequest();
+    await show(tester, c, GlobalKey(), const Size(1000, 650));
+    final trigger = find.byKey(const ValueKey('request-folder-trigger'));
+    await tester.tap(trigger);
+    await tester.pumpAndSettle();
+    final last = find.byKey(const ValueKey('request-folder-option-folder-29'));
+    await tester.ensureVisible(last);
+    await tester.pumpAndSettle();
+    expect(tester.getRect(last).bottom, lessThan(650));
+    await tester.tap(last);
+    await tester.pumpAndSettle();
+    expect(r.folderId, 'folder-29');
+    expect(tester.takeException(), isNull);
+    await tester.runAsync(c.flush);
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
+  for (final bodyType in ['json', 'text']) {
+    testWidgets(
+      'Body Tab inserts two spaces and preserves focus/selection for $bodyType',
+      (tester) async {
+        final c = await controller(tester);
+        final r = c.newRequest()..bodyType = bodyType;
+        await show(tester, c, GlobalKey(), const Size(1280, 720));
+        await tester.tap(find.text('Body').first);
+        await tester.pumpAndSettle();
+        final field = find.byKey(const ValueKey('request-body'));
+        await tester.enterText(field, 'abc');
+        final textController = tester.widget<TextField>(field).controller!;
+        final editable = tester.widget<EditableText>(
+          find.descendant(of: field, matching: find.byType(EditableText)),
+        );
+        textController.selection = const TextSelection.collapsed(offset: 1);
+        await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+        await tester.pump();
+        expect(textController.text, 'a  bc');
+        expect(
+          textController.selection,
+          const TextSelection.collapsed(offset: 3),
+        );
+        expect(editable.focusNode.hasFocus, isTrue);
+        expect(r.body, 'a  bc');
+
+        await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+        await tester.pump();
+        expect(textController.text, 'a    bc');
+        textController.selection = const TextSelection(
+          baseOffset: 5,
+          extentOffset: 1,
+        );
+        await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+        await tester.pump();
+        expect(textController.text, 'a  bc');
+        expect(
+          textController.selection,
+          const TextSelection.collapsed(offset: 3),
+        );
+        expect(editable.focusNode.hasFocus, isTrue);
+
+        await tester.enterText(field, '');
+        await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+        await tester.pump();
+        expect(textController.text, '  ');
+        expect(r.body, '  ');
+        await tester.runAsync(c.flush);
+        expect((c.storage as MemoryStorage).data!['drafts'][0]['body'], '  ');
+
+        await tester.sendKeyDownEvent(LogicalKeyboardKey.shiftLeft);
+        await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+        await tester.sendKeyUpEvent(LogicalKeyboardKey.shiftLeft);
+        await tester.pump();
+        expect(
+          editable.focusNode.hasFocus,
+          isFalse,
+          reason: 'Shift+Tab remains available for keyboard navigation',
+        );
+        expect(textController.text, '  ');
+        expect(tester.takeException(), isNull);
+        await tester.pumpWidget(const SizedBox.shrink());
+      },
+    );
+  }
 
   for (final size in [const Size(1440, 800), const Size(1280, 720)]) {
     testWidgets(

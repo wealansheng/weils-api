@@ -54,11 +54,13 @@ class WorkTab extends StatelessWidget {
     required this.selected,
     required this.onTap,
     this.trailing,
+    this.reorderIndex,
   });
   final String label;
   final bool selected;
   final VoidCallback onTap;
   final Widget? trailing;
+  final int? reorderIndex;
   @override
   Widget build(BuildContext context) => Padding(
     padding: const EdgeInsets.only(right: 3, top: 7),
@@ -68,25 +70,48 @@ class WorkTab extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(7)),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 15),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 160),
-                child: Text(
-                  label,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
-                    color: selected ? AppColors.primary : AppColors.muted,
-                  ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (reorderIndex == null)
+              _label()
+            else
+              ReorderableDragStartListener(
+                index: reorderIndex!,
+                child: MouseRegion(
+                  cursor: SystemMouseCursors.grab,
+                  child: _label(),
                 ),
               ),
-              if (trailing != null) ...[const SizedBox(width: 8), trailing!],
-            ],
+            if (trailing != null)
+              Padding(
+                padding: const EdgeInsets.only(right: 15),
+                child: Center(child: trailing!),
+              ),
+          ],
+        ),
+      ),
+    ),
+  );
+
+  Widget _label() => Padding(
+    padding: EdgeInsets.only(left: 15, right: trailing == null ? 15 : 8),
+    child: Align(
+      widthFactor: 1,
+      alignment: Alignment.centerLeft,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 160),
+        child: Text(
+          label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            fontFamily: 'Microsoft YaHei',
+            fontSize: 12,
+            height: 1.4,
+            fontWeight: FontWeight.w400,
+            color: selected ? AppColors.primary : AppColors.muted,
           ),
         ),
       ),

@@ -195,7 +195,7 @@ Generated request-header names and values are read-only, selectable and use `mut
 
 The only rail destinations are **接口管理** and **请求历史**. Each destination is a 60 × 67px rounded target with a 23px Material icon and an 11px caption. Selected state combines selection fill, cobalt text/icon and semibold caption. Settings remains top-right; help remains bottom-right. These are confirmed shell commitments.
 
-Work tabs use rounded top corners, a pale-blue active background and cobalt semibold 12px text. Labels constrain to 160px and ellipsize. A 5px dot marks unsaved edits; close controls remain separate targets. Section tabs use muted 13px text at rest, cobalt semibold text and an underline when active.
+Work tabs use rounded top corners and a pale-blue active background with cobalt text. Both active and inactive labels keep Microsoft YaHei at 12px, weight 400 and line-height 1.4, so selection cannot change glyph geometry or tab width. Labels constrain to 160px and ellipsize. A 5px dot marks unsaved edits; close controls remain separate targets. Drag the tab body with the mouse to reorder requests horizontally; the overview is excluded and order persists locally. A transparent Material drag proxy preserves typography. Section tabs use muted 13px text at rest, cobalt semibold text and an underline when active.
 
 ### Resource and history rows
 
@@ -208,6 +208,10 @@ Response badges use semantic text on the same semantic color at 8% opacity, comp
 ### Dialogs
 
 White modal surfaces use semibold 17–18px headings and ordinary UI text. Name-entry, dirty-close, settings and help dialogs share the button/field system. Recovery dialogs present real storage failures and preserve the retry/cancel choices; their existence does not add a new visual family.
+
+### Select menus
+
+Request method, module, Body type and authentication share `AnchoredSelect`. Menus align 5px below the trigger's leading edge; selection never changes their anchor. Triggers retain fixed widths, with ellipsis for long names. White panels have a 1px line border, 7px corners and a subtle shadow; 34px rows use pale blue and a cobalt check for selection. Method labels retain their own semantic colors. Menu widths are 156px for methods, 220px for modules, 160px for Body and 180px for authentication; height is capped at 296px with scrolling. Flutter handles keyboard navigation, Escape, outside clicks and viewport boundaries.
 
 The sidecar's HTML/CSS specimens are portable documentation approximations of these native widgets. They are not runtime components, do not import Flutter and do not redefine inherited Material behavior. Synthesized tonal strips are panel previews, not shipped palette tokens.
 

@@ -148,6 +148,15 @@ class WorkspaceController extends ChangeNotifier {
     changed();
   }
 
+  /// [newIndex] is the final position, as supplied by onReorderItem.
+  void reorderDraft(int oldIndex, int newIndex) {
+    if (oldIndex < 0 || oldIndex >= drafts.length) return;
+    newIndex = newIndex.clamp(0, drafts.length - 1);
+    if (oldIndex == newIndex) return;
+    drafts.insert(newIndex, drafts.removeAt(oldIndex));
+    changed();
+  }
+
   void showHistory() {
     historyMode = true;
     selectedHistoryId ??= history.firstOrNull?.id;
