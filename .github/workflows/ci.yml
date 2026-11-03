@@ -1,0 +1,113 @@
+name: CI
+
+# 流程：push 到远程 dev → 静态分析 + 测试 → 全部通过后自动把 dev 合并进 main
+#      任一环节失败，main 保持不动（不会半合进去）
+on:
+  push:
+    branches:
+      - dev
+
+# 同一分支连推时取消上一次仍在跑的检查，避免排队
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# 默认最小权限；只有 merge job 需要写权限
+permissions:
+  contents: read
+
+env:
+  FLUTTER_CHANNEL: stable
+
+jobs:
+  analyze:
+    name: flutter analyze
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: ${{ env.FLUTTER_CHANNEL }}
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Static analysis
+        run: flutter analyze
+
+  test:
+    name: flutter test
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: ${{ env.FLUTTER_CHANNEL }}
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      # integration_test/ 依赖真实设备，无法在 ubuntu 无头环境运行，
+      # 因此这里只跑 test/ 下的单元与 widget 测试。
+      - name: Run tests
+        run: flutter test --reporter expanded --coverage
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: coverage/lcov.info
+          if-no-files-found: ignore
+          retention-days: 7
+
+  merge:
+    name: Merge dev into main
+    # 必须等 analyze + test 都通过；任一失败则本 job 直接跳过，main 不动
+    needs: [analyze, test]
+    if: success() && github.event_name == 'push' && github.ref == 'refs/heads/dev'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout main with full history
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Configure git identity
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Merge dev into main and push
+        run: |
+          set -euo pipefail
+          git fetch origin dev main
+          git checkout main
+
+          # 已是包含状态则什么都不做
+          if git merge-base --is-ancestor origin/dev HEAD; then
+            echo "dev 已经在 main 中，无需合并。"
+            exit 0
+          fi
+
+          # --no-ff 保留一次合并提交，历史可读；冲突时这里会失败，main 保持不变
+          git merge --no-ff origin/dev -m "chore: merge dev into main (auto, dev@${GITHUB_SHA::7})"
+          git push origin main
