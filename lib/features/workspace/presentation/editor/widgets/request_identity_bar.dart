@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:weils_api/core/theme/app_theme.dart';
 import 'package:weils_api/features/workspace/domain/entities/workspace_entities.dart';
 import 'package:weils_api/shared/widgets/anchored_select.dart';
+import 'package:weils_api/features/workspace/domain/use_cases/curl_codec.dart';
 
 class RequestIdentityBar extends StatelessWidget {
   const RequestIdentityBar({
@@ -14,6 +15,7 @@ class RequestIdentityBar extends StatelessWidget {
     required this.onNameChanged,
     required this.onFolderChanged,
     required this.onSave,
+    required this.onExportCurl,
   });
   final RequestSpec request;
   final TextEditingController nameController;
@@ -21,7 +23,9 @@ class RequestIdentityBar extends StatelessWidget {
   final List<Folder> folders;
   final ValueChanged<String> onNameChanged, onFolderChanged;
   final VoidCallback onSave;
+  final ValueChanged<CurlShell> onExportCurl;
   RequestSpec get r => request;
+
   /// 展示接口名称、所属目录和保存入口，并标记当前草稿的未保存状态。
   @override
   Widget build(BuildContext context) => Padding(
@@ -69,7 +73,27 @@ class RequestIdentityBar extends StatelessWidget {
           options: folders.map((f) => SelectOption(f.id, f.name)).toList(),
           onChanged: onFolderChanged,
         ),
-        const SizedBox(width: 16),
+        const SizedBox(width: 8),
+        PopupMenuButton<CurlShell>(
+          key: const ValueKey('export-curl'),
+          tooltip: '复制为 cURL',
+          icon: const Icon(Icons.terminal, size: 18),
+          position: PopupMenuPosition.under,
+          onSelected: onExportCurl,
+          itemBuilder: (_) => const [
+            PopupMenuItem(
+              value: CurlShell.bash,
+              key: ValueKey('export-curl-bash'),
+              child: Text('复制 cURL（Bash）'),
+            ),
+            PopupMenuItem(
+              value: CurlShell.powerShell,
+              key: ValueKey('export-curl-powershell'),
+              child: Text('复制 cURL（PowerShell 7）'),
+            ),
+          ],
+        ),
+        const SizedBox(width: 8),
         Tooltip(
           message: '保存接口 · Ctrl + S',
           child: OutlinedButton(onPressed: onSave, child: const Text('保存')),

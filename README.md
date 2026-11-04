@@ -52,6 +52,16 @@ PR 查询和创建使用 GitHub REST API。创建响应异常时先确认远程�
 - 历史保留当时的请求和响应，包括失败、超时和取消；编辑并重发创建独立草稿，不改写旧记录。
 - 设置中可调整超时（默认 30 秒）、清空历史，并通过 Windows 目录选择器更改数据保存目录；帮助文档内置在应用中。
 
+## cURL 导入与导出
+
+在首页或侧栏加号菜单中选择 **导入 cURL**，粘贴单条命令并选择 Bash 或 PowerShell 7 格式。浏览器开发者工具请选择 **Copy as cURL (bash)**。成功后打开新的未保存请求，原接口及草稿保留，不会自动发送；可以继续编辑、保存或发送。
+
+请求编辑器中，点击保存按钮旁的终端图标 **复制为 cURL**，选择 Bash 或 PowerShell 7。命令包含实际启用的查询参数、Headers、默认请求头、正文及认证；禁用项不导出。SSE 会带上 `--no-buffer`。Windows 推荐将 PowerShell 7 格式粘贴到 `pwsh` 中执行，避免 Windows PowerShell 5.1 的原生命令参数差异。
+
+支持完整 HTTP/HTTPS URL、`-X/--request`、`-H/--header`、`-d/--data`、`--data-raw`、内联 `--data-binary`、`--json`、内联 `--data-urlencode`、`-G/--get`、`-I/--head`、`-A/--user-agent`、`-e/--referer`、内联 `-b/--cookie`、`--oauth2-bearer` 和 `-u/--user user:password`。Bearer 自动填入认证区，完整用户名密码转为显式 Basic Authorization Header。重复查询参数、重复 Headers、中文和引号按内容保留；`--json` 仅在正文为合法 JSON 时选择 JSON 编辑模式。`--no-buffer` 或 `Accept: text/event-stream` 会识别为 SSE。
+
+导入只解析文本，不执行 shell 命令、不读取文件、不展开变量。暂不支持 CMD 格式、文件上传/文件正文、代理、证书、输出文件、多条请求和脚本表达式；遇到不能表示的选项时显示具体原因。`Header:` 的移除请求头语法暂不支持，显式空值可用 `Header;`。`--silent`、`--verbose` 等终端显示选项不影响导入的请求；重定向与解压沿用客户端行为，请求超时沿用全局设置。
+
 ## SSE 流式请求
 
 在请求地址前的模式菜单中选择 **SSE**，再选择实际的 HTTP 方法并发送。支持 GET、POST 等现有方法，复用 Params、Headers、JSON/文本 Body 和 Bearer Token。默认添加 `Accept: text/event-stream`，启用的同名自定义 Header 可以覆盖它。
@@ -101,7 +111,7 @@ PR 查询和创建使用 GitHub REST API。创建响应异常时先确认远程�
 
 开发时可通过环境变量 `WEILS_API_DATA_DIR` 指定独立的初始数据与位置配置目录，该目录中的 `settings.json` 可指向设置中选择的新位置。正常启动是空工作区，不预置演示接口。
 
-普通 HTTP 响应捕获上限为 2 MB，SSE 使用设置中的捕获上限，超出会明确提示截断。长响应的 UI 预览上限为 200,000 字符，复制仍获取完整的已捕获正文。历史不会自动清理，可在设置中手动清空。当前首版不包含表单上传、Basic Auth、账号、团队协作或云同步。
+普通 HTTP 响应捕获上限为 2 MB，SSE 使用设置中的捕获上限，超出会明确提示截断。长响应的 UI 预览上限为 200,000 字符，复制仍获取完整的已捕获正文。历史不会自动清理，可在设置中手动清空。当前首版不包含表单上传、独立 Basic Auth 编辑器、账号、团队协作或云同步；Basic 认证可通过显式 Header 或 cURL 导入配置。
 
 ## 验证
 
@@ -111,6 +121,7 @@ flutter test
 flutter test integration_test/windows_flow_test.dart -d windows
 flutter test integration_test/mock_windows_flow_test.dart -d windows
 flutter test integration_test/sse_windows_flow_test.dart -d windows
+flutter test integration_test/curl_windows_flow_test.dart -d windows
 ```
 
 核心测试通过本地 HTTP 服务验证真实请求、编码、认证、超时、取消、响应截断、持久化、草稿恢复和历史隔离。界面测试覆盖 1440×800 / 1280×720、关闭保护、设置及帮助。Windows 集成测试使用临时数据目录验证实际桌面应用的完整流程。

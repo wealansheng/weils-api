@@ -4,8 +4,14 @@ import 'package:weils_api/core/theme/app_theme.dart';
 import 'package:weils_api/shared/widgets/api_mark.dart';
 
 class WorkspaceHome extends StatelessWidget {
-  const WorkspaceHome({super.key, required this.onCreate});
+  const WorkspaceHome({
+    super.key,
+    required this.onCreate,
+    required this.onImportCurl,
+  });
   final VoidCallback onCreate;
+  final VoidCallback onImportCurl;
+
   /// 展示接口管理空状态、新建入口与常用快捷键说明。
   @override
   Widget build(BuildContext context) => Center(
@@ -38,6 +44,13 @@ class WorkspaceHome extends StatelessWidget {
               icon: const Icon(Icons.add, size: 18),
               label: const Text('新建 HTTP 接口'),
             ),
+          ),
+          const SizedBox(height: 10),
+          TextButton.icon(
+            key: const ValueKey('import-curl-home'),
+            onPressed: onImportCurl,
+            icon: const Icon(Icons.terminal, size: 17),
+            label: const Text('导入 cURL'),
           ),
         ],
       ),

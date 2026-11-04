@@ -25,7 +25,7 @@ lib/
       domain/
         entities/                    不可变实体、工作区快照
         repositories/                工作区仓储、请求网关接口
-        use_cases/                   发送并记录、历史重发、设置更新
+        use_cases/                   发送并记录、历史重发、设置更新、cURL 转换
       data/
         models/                      workspace.json v1 编解码
         data_sources/                本地文件、恢复、目录迁移
@@ -75,6 +75,12 @@ lib/
 `RepositoryViewModel` 只监听本模块需要的数据投影。未变化的快照集合保留引用，历史追加不会触发编辑器或接口列表刷新。Widget 使用局部 ListenableBuilder、Consumer 或 select 更新。ViewModel 不相互调用；共享数据通过仓储状态流同步。
 
 外部注入的 `AppDependencies` 由调用方释放，默认生产依赖由 `WeilsApp` 释放。执行状态先取消请求并解除订阅，再释放平台服务与仓储。各页面 ViewModel 取消自身订阅，避免页面切换后继续通知已销毁的 ChangeNotifier。
+
+## cURL 转换
+
+`CurlCodec` 是纯 Dart 请求转换器：对 Bash / PowerShell 7 的有限语法进行分词，将常用选项映射为现有 `RequestSpec`，或依据 `effectiveUri`、默认请求头及启用项生成命令。它不执行进程、不访问文件、不求值变量；不支持的参数和无法表示的内容通过 `CurlFormatException` 返回中文说明。生成时处理两种 shell 的引号及换行，自动 Host、Content-Length 由 cURL 重算，显式自定义头按原值导出。
+
+导入弹窗只维护命令、格式和错误的局部状态；解析成功后由导航层调用仓储 `openRequest` 创建独立草稿，不修改已有接口，不进入执行/历史流程。导出读取编辑器当前快照，由展示层写入剪贴板并提示结果。转换复用原请求模型及 v1 编解码，无新增持久化字段或依赖包。
 
 ## SSE 流式执行
 

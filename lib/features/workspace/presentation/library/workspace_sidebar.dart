@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:weils_api/core/theme/app_theme.dart';
 import 'package:weils_api/shared/widgets/input_dialogs.dart';
+
 import 'view_models/library_view_model.dart';
 
 class WorkspaceSidebar extends StatelessWidget {
@@ -12,12 +13,15 @@ class WorkspaceSidebar extends StatelessWidget {
     required this.searchController,
     required this.onSearch,
     required this.child,
+    required this.onImportCurl,
   });
   final bool historyMode;
   final LibraryViewModel library;
   final TextEditingController searchController;
   final ValueChanged<String> onSearch;
   final Widget child;
+  final VoidCallback onImportCurl;
+
   /// 组合接口或历史侧栏的标题、搜索输入和功能列表。
   @override
   Widget build(BuildContext context) => DecoratedBox(
@@ -63,7 +67,7 @@ class WorkspaceSidebar extends StatelessWidget {
                   width: 34,
                   height: 34,
                   child: PopupMenuButton<String>(
-                    tooltip: '新建接口或文件夹',
+                    tooltip: '新建接口、文件夹或导入 cURL',
                     padding: EdgeInsets.zero,
                     position: PopupMenuPosition.under,
                     style: IconButton.styleFrom(
@@ -77,6 +81,8 @@ class WorkspaceSidebar extends StatelessWidget {
                     onSelected: (value) async {
                       if (value == 'request') {
                         library.newRequest();
+                      } else if (value == 'curl') {
+                        onImportCurl();
                       } else {
                         final name = await askName(context, title: '新建文件夹');
                         if (name != null) library.addFolder(name);
@@ -88,6 +94,7 @@ class WorkspaceSidebar extends StatelessWidget {
                         child: Text('新建 HTTP 接口'),
                       ),
                       PopupMenuItem(value: 'folder', child: Text('新建文件夹')),
+                      PopupMenuItem(value: 'curl', child: Text('导入 cURL')),
                     ],
                   ),
                 ),

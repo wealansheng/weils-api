@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:weils_api/core/theme/app_theme.dart';
 
-/// 打开内置使用说明，介绍接口请求、SSE、历史与 Mock 等功能。
+/// 打开内置使用说明，介绍接口请求、cURL、SSE、历史与 Mock 等功能。
 Future<void> openHelp(BuildContext context) => showDialog<void>(
   context: context,
   builder: (context) => AlertDialog(
@@ -24,6 +24,10 @@ Future<void> openHelp(BuildContext context) => showDialog<void>(
           _HelpItem(
             '编辑与发送',
             '选择 HTTP 方法，填写完整的 http:// 或 https:// 地址。Params 和 Headers 使用启用勾选框；Params 中同名字段会覆盖地址里的查询参数。Body 支持 JSON 与原始文本，认证支持 Bearer Token。',
+          ),
+          _HelpItem(
+            'cURL 导入与导出',
+            '在首页或侧栏加号菜单选择“导入 cURL”，粘贴单条命令并选择 Bash 或 PowerShell 7 格式。浏览器请选择“复制为 cURL（bash）”。导入会打开独立草稿，不覆盖当前接口，也不自动发送。支持方法、URL、Headers、内联 JSON/文本正文、Bearer 与 SSE；--user 的完整账号密码转为 Basic Header。编辑器保存按钮旁的终端图标可复制当前请求为 cURL，包含启用参数与认证；Windows 建议使用 PowerShell 7。暂不支持 CMD 格式、变量/脚本、文件上传、代理和证书选项，无法转换时会显示原因。',
           ),
           _HelpItem(
             '保存与草稿',
@@ -68,6 +72,7 @@ Future<void> openHelp(BuildContext context) => showDialog<void>(
 class _HelpItem extends StatelessWidget {
   const _HelpItem(this.title, this.text);
   final String title, text;
+
   /// 展示一条帮助主题及对应操作说明。
   @override
   Widget build(BuildContext context) => Padding(

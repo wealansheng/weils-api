@@ -17,6 +17,7 @@ import '../../features/workspace/presentation/history/history_list_panel.dart';
 import '../../features/workspace/presentation/history/history_workspace.dart';
 import '../../features/workspace/presentation/history/view_models/history_view_model.dart';
 import '../../features/workspace/presentation/library/workspace_home.dart';
+import '../../features/workspace/presentation/library/curl_import_dialog.dart';
 import '../../features/workspace/presentation/library/workspace_sidebar.dart';
 import '../../features/workspace/presentation/library/request_library_panel.dart';
 import '../../features/workspace/presentation/library/view_models/library_view_model.dart';
@@ -97,6 +98,17 @@ class _WorkspaceRootState extends State<WorkspaceRoot> {
       return;
     }
     repository.newRequest();
+    _navigate(false);
+  }
+
+  /// 将导入结果作为独立草稿打开，保留已打开接口及其编辑内容。
+  Future<void> _importCurl() async {
+    final request = await openCurlImportDialog(
+      context,
+      folderId: repository.state.snapshot.folders.first.id,
+    );
+    if (!mounted || request == null) return;
+    repository.openRequest(request);
     _navigate(false);
   }
 
@@ -196,6 +208,7 @@ class _WorkspaceRootState extends State<WorkspaceRoot> {
                     ? MockSidebar(viewModel: context.read<MockViewModel>())
                     : WorkspaceSidebar(
                         historyMode: historyMode,
+                        onImportCurl: _importCurl,
                         library: library,
                         searchController: _search,
                         onSearch: historyMode ? history.search : library.search,
@@ -225,7 +238,10 @@ class _WorkspaceRootState extends State<WorkspaceRoot> {
                           ),
                           Expanded(
                             child: activeId == null
-                                ? WorkspaceHome(onCreate: _newRequest)
+                                ? WorkspaceHome(
+                                    onCreate: _newRequest,
+                                    onImportCurl: _importCurl,
+                                  )
                                 : ChangeNotifierProvider(
                                     key: ValueKey(activeId),
                                     create: (_) => RequestEditorViewModel(
