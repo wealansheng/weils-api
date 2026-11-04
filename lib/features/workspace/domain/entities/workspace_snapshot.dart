@@ -1,7 +1,7 @@
 import 'folder.dart';
 import 'request_spec.dart';
 import 'history_record.dart';
-import '../../../mock/domain/entities/mock_definition.dart';
+import 'package:weils_api/features/mock/domain/entities/mock_definition.dart';
 
 const _unchanged = Object();
 

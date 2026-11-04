@@ -1,4 +1,4 @@
-import '../../../../core/errors/app_failure.dart';
+import 'package:weils_api/core/errors/app_failure.dart';
 import '../repositories/workspace_repository.dart';
 
 /// Settings and a possible data relocation are committed as one operation.

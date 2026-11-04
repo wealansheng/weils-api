@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
-import '../../../core/theme/app_theme.dart';
-import '../../../shared/widgets/input_dialogs.dart';
+import 'package:weils_api/core/theme/app_theme.dart';
+import 'package:weils_api/shared/widgets/input_dialogs.dart';
 import 'formatters/settings_messages.dart';
 import 'view_models/settings_view_model.dart';
 

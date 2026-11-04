@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../../../shared/widgets/empty_message.dart';
+import 'package:weils_api/shared/widgets/empty_message.dart';
 import '../../domain/entities/history_record.dart';
 import 'history_detail.dart';
 import 'view_models/history_view_model.dart';

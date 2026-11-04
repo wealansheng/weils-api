@@ -1,6 +1,6 @@
-import '../../../domain/entities/workspace_entities.dart';
-import '../../../domain/repositories/workspace_repository.dart';
-import '../../../domain/use_cases/request_headers.dart';
+import 'package:weils_api/features/workspace/domain/entities/workspace_entities.dart';
+import 'package:weils_api/features/workspace/domain/repositories/workspace_repository.dart';
+import 'package:weils_api/features/workspace/domain/use_cases/request_headers.dart';
 import '../../view_models/repository_view_model.dart';
 
 enum EntryKind { params, headers }

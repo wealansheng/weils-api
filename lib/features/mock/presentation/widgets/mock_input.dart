@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../../../shared/widgets/tab_indentation.dart';
+import 'package:weils_api/shared/widgets/tab_indentation.dart';
 
 /// Keeps external template updates and text editing in sync without resetting
 /// the selection on every keystroke.

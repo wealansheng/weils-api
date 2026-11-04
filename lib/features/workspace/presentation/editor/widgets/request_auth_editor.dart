@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
-import '../../../../../core/theme/app_theme.dart';
-import '../../../domain/entities/request_spec.dart';
-import '../../../../../shared/widgets/anchored_select.dart';
+import 'package:weils_api/core/theme/app_theme.dart';
+import 'package:weils_api/features/workspace/domain/entities/request_spec.dart';
+import 'package:weils_api/shared/widgets/anchored_select.dart';
 
 class RequestAuthEditor extends StatefulWidget {
   const RequestAuthEditor({

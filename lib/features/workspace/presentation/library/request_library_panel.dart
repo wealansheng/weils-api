@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
-import '../../../../core/theme/app_theme.dart';
-import '../../../../shared/widgets/empty_message.dart';
-import '../../../../shared/widgets/input_dialogs.dart';
+import 'package:weils_api/core/theme/app_theme.dart';
+import 'package:weils_api/shared/widgets/empty_message.dart';
+import 'package:weils_api/shared/widgets/input_dialogs.dart';
 import '../../domain/entities/workspace_entities.dart';
 import '../formatters/method_style.dart';
 import 'view_models/library_view_model.dart';

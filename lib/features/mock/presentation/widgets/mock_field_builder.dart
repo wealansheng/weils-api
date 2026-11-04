@@ -2,7 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 
-import '../../../../shared/widgets/anchored_select.dart';
+import 'package:weils_api/shared/widgets/anchored_select.dart';
 import '../../domain/entities/mock_definition.dart';
 import '../../domain/use_cases/generate_mock.dart';
 import 'mock_input.dart';

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../../../../core/theme/app_theme.dart';
-import '../../../../shared/widgets/section_tabs.dart';
+import 'package:weils_api/core/theme/app_theme.dart';
+import 'package:weils_api/shared/widgets/section_tabs.dart';
 import '../../domain/entities/workspace_entities.dart';
 import '../formatters/workspace_messages.dart';
 import 'view_models/request_editor_view_model.dart';

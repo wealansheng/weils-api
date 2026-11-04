@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import '../../../../core/utils/identity.dart';
+import 'package:weils_api/core/utils/identity.dart';
 
 enum MockConditionSource { header, body }
 

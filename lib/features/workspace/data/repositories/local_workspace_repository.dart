@@ -1,14 +1,14 @@
 import 'dart:async';
 import 'dart:convert';
 
-import '../../../../core/errors/app_failure.dart';
-import '../../../../core/utils/identity.dart';
+import 'package:weils_api/core/errors/app_failure.dart';
+import 'package:weils_api/core/utils/identity.dart';
 import '../../domain/entities/workspace_entities.dart';
 import '../../domain/repositories/workspace_repository.dart';
 import '../data_sources/workspace_data_source.dart';
 import '../models/workspace_json.dart';
-import '../../../mock/domain/entities/mock_definition.dart';
-import '../../../mock/domain/use_cases/generate_mock.dart';
+import 'package:weils_api/features/mock/domain/entities/mock_definition.dart';
+import 'package:weils_api/features/mock/domain/use_cases/generate_mock.dart';
 
 /// Owns the only mutable reference to the immutable workspace snapshot.
 class LocalWorkspaceRepository implements WorkspaceRepository {

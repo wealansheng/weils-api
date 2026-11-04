@@ -1,4 +1,4 @@
-import '../../../../core/utils/identity.dart';
+import 'package:weils_api/core/utils/identity.dart';
 
 class Entry {
   Entry({

@@ -1,4 +1,4 @@
-import '../../../../core/errors/app_failure.dart';
+import 'package:weils_api/core/errors/app_failure.dart';
 
 class ResponseRecord {
   ResponseRecord({

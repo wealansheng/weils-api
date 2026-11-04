@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../../../../core/theme/app_theme.dart';
-import '../../../../shared/widgets/api_mark.dart';
+import 'package:weils_api/core/theme/app_theme.dart';
+import 'package:weils_api/shared/widgets/api_mark.dart';
 
 class WorkspaceHome extends StatelessWidget {
   const WorkspaceHome({super.key, required this.onCreate});

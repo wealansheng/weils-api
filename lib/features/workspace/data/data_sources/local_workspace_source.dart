@@ -1,8 +1,8 @@
 import 'dart:convert';
 import 'dart:io';
 
-import '../../../../core/errors/app_failure.dart';
-import '../../../../core/storage/atomic_json_file.dart';
+import 'package:weils_api/core/errors/app_failure.dart';
+import 'package:weils_api/core/storage/atomic_json_file.dart';
 import '../../domain/entities/workspace_snapshot.dart';
 import '../models/workspace_json.dart';
 import 'workspace_data_source.dart';

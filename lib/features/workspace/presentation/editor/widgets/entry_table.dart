@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
-import '../../../../../core/theme/app_theme.dart';
-import '../../../domain/entities/entry.dart';
-import '../../../domain/use_cases/request_headers.dart';
+import 'package:weils_api/core/theme/app_theme.dart';
+import 'package:weils_api/features/workspace/domain/entities/entry.dart';
+import 'package:weils_api/features/workspace/domain/use_cases/request_headers.dart';
 
 class EntryTable extends StatelessWidget {
   const EntryTable({

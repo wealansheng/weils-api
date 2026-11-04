@@ -1,5 +1,5 @@
-import '../../../../core/network/http_transport.dart';
-import '../../../../core/platform/runtime_info.dart';
+import 'package:weils_api/core/network/http_transport.dart';
+import 'package:weils_api/core/platform/runtime_info.dart';
 import '../../domain/entities/workspace_entities.dart';
 import '../../domain/repositories/request_gateway.dart';
 import '../../domain/use_cases/request_headers.dart';

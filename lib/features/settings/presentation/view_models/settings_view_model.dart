@@ -1,9 +1,9 @@
 import 'package:flutter/foundation.dart';
 
-import '../../../../core/errors/app_failure.dart';
-import '../../../../core/platform/desktop_window.dart';
-import '../../../workspace/domain/repositories/workspace_repository.dart';
-import '../../../workspace/domain/use_cases/update_workspace_settings.dart';
+import 'package:weils_api/core/errors/app_failure.dart';
+import 'package:weils_api/core/platform/desktop_window.dart';
+import 'package:weils_api/features/workspace/domain/repositories/workspace_repository.dart';
+import 'package:weils_api/features/workspace/domain/use_cases/update_workspace_settings.dart';
 
 class SettingsViewModel extends ChangeNotifier {
   SettingsViewModel(this.repository, this.window, this.updateSettings);

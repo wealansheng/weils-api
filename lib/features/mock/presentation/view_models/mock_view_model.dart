@@ -2,9 +2,9 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 
-import '../../../../core/errors/app_failure.dart';
-import '../../../workspace/domain/entities/workspace_snapshot.dart';
-import '../../../workspace/domain/repositories/workspace_repository.dart';
+import 'package:weils_api/core/errors/app_failure.dart';
+import 'package:weils_api/features/workspace/domain/entities/workspace_snapshot.dart';
+import 'package:weils_api/features/workspace/domain/repositories/workspace_repository.dart';
 import '../../domain/entities/mock_definition.dart';
 import '../../domain/repositories/mock_server.dart';
 

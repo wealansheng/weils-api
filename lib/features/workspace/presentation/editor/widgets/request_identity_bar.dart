@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
-import '../../../../../core/theme/app_theme.dart';
-import '../../../domain/entities/workspace_entities.dart';
-import '../../../../../shared/widgets/anchored_select.dart';
+import 'package:weils_api/core/theme/app_theme.dart';
+import 'package:weils_api/features/workspace/domain/entities/workspace_entities.dart';
+import 'package:weils_api/shared/widgets/anchored_select.dart';
 
 class RequestIdentityBar extends StatelessWidget {
   const RequestIdentityBar({

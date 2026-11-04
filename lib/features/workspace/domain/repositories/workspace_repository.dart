@@ -1,6 +1,6 @@
-import '../../../../core/errors/app_failure.dart';
+import 'package:weils_api/core/errors/app_failure.dart';
 import '../entities/workspace_entities.dart';
-import '../../../mock/domain/entities/mock_definition.dart';
+import 'package:weils_api/features/mock/domain/entities/mock_definition.dart';
 
 abstract interface class WorkspaceRepository {
   WorkspaceState get state;

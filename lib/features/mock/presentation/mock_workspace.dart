@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import '../../../core/theme/app_theme.dart';
-import '../../../shared/widgets/anchored_select.dart';
-import '../../../shared/widgets/input_dialogs.dart';
-import '../../../shared/widgets/section_tabs.dart';
+import 'package:weils_api/core/theme/app_theme.dart';
+import 'package:weils_api/shared/widgets/anchored_select.dart';
+import 'package:weils_api/shared/widgets/input_dialogs.dart';
+import 'package:weils_api/shared/widgets/section_tabs.dart';
 import '../domain/entities/mock_definition.dart';
 import '../domain/use_cases/generate_mock.dart';
 import 'view_models/mock_view_model.dart';

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../../../../core/theme/app_theme.dart';
+import 'package:weils_api/core/theme/app_theme.dart';
 
 class ResponseHeadersTable extends StatelessWidget {
   const ResponseHeadersTable({super.key, required this.headers});

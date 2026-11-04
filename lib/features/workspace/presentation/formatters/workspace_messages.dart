@@ -1,4 +1,4 @@
-import '../../../../core/errors/app_failure.dart';
+import 'package:weils_api/core/errors/app_failure.dart';
 import '../../domain/entities/workspace_entities.dart';
 
 String? workspaceNoticeMessage(WorkspaceNotice? notice) => switch (notice) {

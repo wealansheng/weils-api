@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 
-import '../../../../../core/theme/app_theme.dart';
-import '../../../../../core/utils/json_format.dart';
-import '../../../domain/entities/request_spec.dart';
-import '../../../../../shared/widgets/anchored_select.dart';
-import '../../../../../shared/widgets/tab_indentation.dart';
+import 'package:weils_api/core/theme/app_theme.dart';
+import 'package:weils_api/core/utils/json_format.dart';
+import 'package:weils_api/features/workspace/domain/entities/request_spec.dart';
+import 'package:weils_api/shared/widgets/anchored_select.dart';
+import 'package:weils_api/shared/widgets/tab_indentation.dart';
 
 class RequestBodyEditor extends StatefulWidget {
   const RequestBodyEditor({

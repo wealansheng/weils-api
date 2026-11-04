@@ -1,6 +1,6 @@
-import '../../../domain/entities/workspace_entities.dart';
-import '../../../domain/repositories/workspace_repository.dart';
-import '../../../domain/use_cases/replay_history.dart';
+import 'package:weils_api/features/workspace/domain/entities/workspace_entities.dart';
+import 'package:weils_api/features/workspace/domain/repositories/workspace_repository.dart';
+import 'package:weils_api/features/workspace/domain/use_cases/replay_history.dart';
 import '../../view_models/repository_view_model.dart';
 
 class HistoryViewModel extends RepositoryViewModel<List<HistoryRecord>> {

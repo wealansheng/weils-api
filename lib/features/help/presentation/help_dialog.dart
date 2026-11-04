@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../../core/theme/app_theme.dart';
+import 'package:weils_api/core/theme/app_theme.dart';
 
 Future<void> openHelp(BuildContext context) => showDialog<void>(
   context: context,

@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 
 import '../../domain/entities/workspace_entities.dart';
-import '../../../../core/theme/app_theme.dart';
-import '../../../../core/utils/json_format.dart';
-import '../../../../shared/widgets/code_view.dart';
-import '../../../../shared/widgets/section_tabs.dart';
+import 'package:weils_api/core/theme/app_theme.dart';
+import 'package:weils_api/core/utils/json_format.dart';
+import 'package:weils_api/shared/widgets/code_view.dart';
+import 'package:weils_api/shared/widgets/section_tabs.dart';
 import '../editor/widgets/response_pane.dart';
 import '../formatters/method_style.dart';
 

@@ -2,10 +2,10 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 
-import '../../../domain/entities/workspace_entities.dart';
-import '../../../domain/repositories/request_gateway.dart';
-import '../../../domain/repositories/workspace_repository.dart';
-import '../../../domain/use_cases/send_request.dart';
+import 'package:weils_api/features/workspace/domain/entities/workspace_entities.dart';
+import 'package:weils_api/features/workspace/domain/repositories/request_gateway.dart';
+import 'package:weils_api/features/workspace/domain/repositories/workspace_repository.dart';
+import 'package:weils_api/features/workspace/domain/use_cases/send_request.dart';
 
 /// Application-scoped so sending survives switching tabs or opening history.
 class RequestExecutionViewModel extends ChangeNotifier {

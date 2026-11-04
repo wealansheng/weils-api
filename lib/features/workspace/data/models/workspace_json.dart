@@ -1,6 +1,6 @@
-import '../../../../core/errors/app_failure.dart';
+import 'package:weils_api/core/errors/app_failure.dart';
 import '../../domain/entities/workspace_entities.dart';
-import '../../../mock/data/mock_json.dart';
+import 'package:weils_api/features/mock/data/mock_json.dart';
 
 /// The v1 disk schema is isolated here; entities know nothing about JSON.
 abstract final class WorkspaceJson {

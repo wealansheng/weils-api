@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import '../../../../../core/theme/app_theme.dart';
-import '../../../../../core/utils/json_format.dart';
-import '../../../domain/entities/response_record.dart';
+import 'package:weils_api/core/theme/app_theme.dart';
+import 'package:weils_api/core/utils/json_format.dart';
+import 'package:weils_api/features/workspace/domain/entities/response_record.dart';
 import '../../formatters/workspace_messages.dart';
-import '../../../../../shared/widgets/code_view.dart';
-import '../../../../../shared/widgets/section_tabs.dart';
-import '../../../../../shared/widgets/empty_message.dart';
+import 'package:weils_api/shared/widgets/code_view.dart';
+import 'package:weils_api/shared/widgets/section_tabs.dart';
+import 'package:weils_api/shared/widgets/empty_message.dart';
 import 'response_headers_table.dart';
 
 class ResponsePane extends StatefulWidget {
