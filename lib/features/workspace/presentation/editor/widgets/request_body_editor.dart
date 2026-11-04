@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 import '../../../../../core/theme/app_theme.dart';
 import '../../../../../core/utils/json_format.dart';
 import '../../../domain/entities/request_spec.dart';
 import '../../../../../shared/widgets/anchored_select.dart';
+import '../../../../../shared/widgets/tab_indentation.dart';
 
 class RequestBodyEditor extends StatefulWidget {
   const RequestBodyEditor({
@@ -28,22 +28,6 @@ class _RequestBodyEditorState extends State<RequestBodyEditor> {
   void dispose() {
     _body.dispose();
     super.dispose();
-  }
-
-  void _insertBodyIndent() {
-    final value = _body.value;
-    final start = value.selection.isValid
-        ? value.selection.start
-        : value.text.length;
-    final end = value.selection.isValid
-        ? value.selection.end
-        : value.text.length;
-    _body.value = value.copyWith(
-      text: value.text.replaceRange(start, end, '  '),
-      selection: TextSelection.collapsed(offset: start + 2),
-      composing: TextRange.empty,
-    );
-    widget.onChanged(_body.text);
   }
 
   @override
@@ -88,11 +72,9 @@ class _RequestBodyEditorState extends State<RequestBodyEditor> {
                   style: TextStyle(fontSize: 12, color: AppColors.muted),
                 ),
               )
-            : CallbackShortcuts(
-                bindings: {
-                  const SingleActivator(LogicalKeyboardKey.tab):
-                      _insertBodyIndent,
-                },
+            : TabIndentation(
+                controller: _body,
+                onChanged: widget.onChanged,
                 child: TextField(
                   key: const ValueKey('request-body'),
                   controller: _body,

@@ -162,10 +162,10 @@ jobs:
           commits="$(git log --no-merges --format='- %s (%h)' origin/main..origin/dev)"
           if [ -n "$commits" ]; then
             git merge --no-ff origin/dev \
-              -m "chore: merge dev into main (auto, dev@${GITHUB_SHA::7})" \
+              -m "merge: merge dev into main (auto, dev@${GITHUB_SHA::7})" \
               -m "$commits"
           else
             git merge --no-ff origin/dev \
-              -m "chore: merge dev into main (auto, dev@${GITHUB_SHA::7})"
+              -m "merge: merge dev into main (auto, dev@${GITHUB_SHA::7})"
           fi
           git push origin main
