@@ -11,7 +11,7 @@ enum FailureCode {
   timeout,
 }
 
-/// Infrastructure failures carry machine-readable information, never UI copy.
+/// 基础设施错误只携带可识别的错误信息，展示文案由界面层转换。
 class AppFailure implements Exception {
   const AppFailure(this.code, {this.seconds, this.cause});
   final FailureCode code;

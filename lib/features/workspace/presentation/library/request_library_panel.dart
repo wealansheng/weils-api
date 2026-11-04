@@ -15,6 +15,7 @@ class RequestLibraryPanel extends StatefulWidget {
   });
   final LibraryViewModel viewModel;
   final String? runningId;
+  /// 创建接口目录树的展开与菜单交互状态。
   @override
   State<RequestLibraryPanel> createState() => _RequestLibraryPanelState();
 }
@@ -22,13 +23,17 @@ class RequestLibraryPanel extends StatefulWidget {
 class _RequestLibraryPanelState extends State<RequestLibraryPanel> {
   final _collapsed = <String>{};
   LibraryViewModel get c => widget.viewModel;
+  /// 使用接口库的搜索规则判断请求是否可见。
   bool _matches(RequestSpec r) => c.matches(r);
+  /// 显示目录或接口操作的结果提示。
   void _toast(String text) => ScaffoldMessenger.of(context).showSnackBar(
     SnackBar(content: Text(text), duration: const Duration(seconds: 2)),
   );
+  /// 监听接口库状态，展示目录树与搜索结果。
   @override
   Widget build(BuildContext context) =>
       ListenableBuilder(listenable: c, builder: (context, _) => _tree());
+  /// 构建目录及其请求列表，结合展开状态和搜索条件决定可见项。
   Widget _tree() {
     final query = c.query;
     final visible = c.folders
@@ -145,6 +150,7 @@ class _RequestLibraryPanelState extends State<RequestLibraryPanel> {
     );
   }
 
+  /// 构建接口列表行，连接打开、选中及右键菜单操作。
   Widget _requestRow(RequestSpec request) => Padding(
     padding: const EdgeInsets.only(left: 23, bottom: 3),
     child: GestureDetector(
@@ -189,6 +195,7 @@ class _RequestLibraryPanelState extends State<RequestLibraryPanel> {
       ),
     ),
   );
+  /// 在触发位置显示上下文菜单，并返回用户选择的操作。
   Future<String?> _contextMenu(
     Offset position,
     List<PopupMenuEntry<String>> items,
@@ -202,6 +209,7 @@ class _RequestLibraryPanelState extends State<RequestLibraryPanel> {
     ),
     items: items,
   );
+  /// 处理目录的新建、重命名和删除菜单，删除前检查运行中请求并确认。
   Future<void> _folderMenu(Folder folder, Offset position) async {
     final action = await _contextMenu(position, const [
       PopupMenuItem(value: 'new', child: Text('新建接口')),
@@ -235,6 +243,7 @@ class _RequestLibraryPanelState extends State<RequestLibraryPanel> {
     }
   }
 
+  /// 处理接口的重命名与删除菜单，删除前检查执行状态并确认。
   Future<void> _requestMenu(RequestSpec request, Offset position) async {
     final action = await _contextMenu(position, const [
       PopupMenuItem(value: 'rename', child: Text('重命名')),

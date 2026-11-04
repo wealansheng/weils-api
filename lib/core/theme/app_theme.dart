@@ -12,6 +12,7 @@ abstract final class AppColors {
   static const amber = Color(0xFFA96818);
 }
 
+/// 创建桌面应用共用的配色、字体和控件主题。
 ThemeData appTheme() => ThemeData(
   useMaterial3: true,
   fontFamily: 'Microsoft YaHei',

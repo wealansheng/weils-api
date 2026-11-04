@@ -6,7 +6,7 @@ import 'render_path_values.dart';
 
 const mockMaxBytes = 2 * 1024 * 1024;
 
-/// A JSON-only subset of Mock.js. No evaluation or JavaScript runtime is used.
+/// 基于 JSON 模板实现受限的 Mock.js 语法子集，不依赖脚本求值或 JavaScript 运行时。
 class MockGenerator {
   MockGenerator({Random? random, DateTime Function()? now})
     : random = random ?? Random(),
@@ -17,6 +17,7 @@ class MockGenerator {
   int _nodes = 0, _textBytes = 0;
   Map<String, String>? _pathParameters;
 
+  /// 解析并完整校验 JSON 模板，再生成响应；每次重置计数器并限制最终输出大小。
   String generate(String template, {Map<String, String>? pathParameters}) {
     _pathParameters = pathParameters == null
         ? null
@@ -43,10 +44,11 @@ class MockGenerator {
     return result;
   }
 
+  /// 以统一的 Mock 校验异常终止模板处理。
   Never _fail(String message) => throw MockValidationException(message);
 
-  // A placeholder such as @pick can return a collection directly. Validate
-  // the resulting tree as well as the template so it cannot bypass limits.
+  // @pick 等占位符可直接返回集合，因此生成结果也要校验，防止绕过模板限制。
+  /// 检查生成结果的深度、节点数、数组长度及有限数值，限制模板展开后的体积。
   void _checkOutput(Object? value, int depth) {
     if (depth > 32) _fail('生成深度超过 32 层');
     if (++_nodes > 100000) _fail('生成数据过大（最多 100000 个节点）');
@@ -64,8 +66,7 @@ class MockGenerator {
     }
   }
 
-  /// Validate every branch, including array items/object properties which a
-  /// random draw may not include in this particular output.
+  /// 预先校验所有模板分支，包括本次随机生成可能不会选中的分支。
   void _validate(Object? value, String path, int depth) {
     if (depth > 32) _fail('$path：生成深度超过 32 层');
     if (value is List) {
@@ -142,6 +143,7 @@ class MockGenerator {
     }
   }
 
+  /// 在包含两端点的整数区间内取随机值，并检查允许的数值边界。
   int _integer(int min, int max) {
     if (min > max || min.abs() > 1000000000000 || max.abs() > 1000000000000) {
       _fail('整数范围无效或超过 ±10¹²');
@@ -149,16 +151,19 @@ class MockGenerator {
     return min + (random.nextDouble() * (max - min + 1)).floor();
   }
 
+  /// 校验字符串、数组或对象的生成数量，防止超出允许范围。
   void _size(int count) {
     if (count < 0 || count > 1000) _fail('重复次数须在 0–1000 之间');
   }
 
+  /// 累计生成文本的 UTF-8 字节数，超过正文上限时终止生成。
   String _track(String text) {
     _textBytes += utf8.encode(text).length;
     if (_textBytes > mockMaxBytes) _fail('生成正文超过 2 MB');
     return text;
   }
 
+  /// 递归展开字段规则与占位符，维护递增状态并控制深度、节点数和输出规模。
   Object? _visit(Object? value, String path, int depth, [String? rule]) {
     if (depth > 32) _fail('$path：生成深度超过 32 层');
     if (++_nodes > 100000) _fail('生成数据过大（最多 100000 个节点）');
@@ -267,10 +272,12 @@ class MockGenerator {
     _fail('$path：该类型不支持生成规则');
   }
 
+  /// 解析源字符串中的占位符与参数；单个占位符保留原始值类型，混合文本转为字符串。
   Object? _placeholders(String text) {
     if (RegExp(r'@(?:/|\.\.?/)').hasMatch(text)) _fail('暂不支持模板字段引用');
     final pieces = <Object?>[];
     var pieceBytes = 0;
+    /// 累计当前字符串片段的编码大小，防止拼接结果超过响应上限。
     void addPiece(Object? value) {
       pieceBytes += utf8
           .encode(value is String ? value : jsonEncode(value))
@@ -279,6 +286,7 @@ class MockGenerator {
       pieces.add(value);
     }
 
+    /// 仅替换源模板中的路径引用，捕获的请求值保持原样，不再次解析为模板。
     String sourceText(String value) => renderMockPathValues(
       value,
       _pathParameters,
@@ -334,8 +342,9 @@ class MockGenerator {
     return _track(pieces.map((p) => p is String ? p : jsonEncode(p)).join());
   }
 
+  /// 将占位符参数转换为 JSON 参数列表，兼容单引号字符串并校验转义。
   List<Object?> _arguments(String source) {
-    // Normalize single-quoted string arguments without changing quoted content.
+    // 将单引号字符串参数转换为 JSON 格式，保持引号内部的原始内容。
     final normalized = StringBuffer();
     var i = 0;
     while (i < source.length) {
@@ -385,17 +394,21 @@ class MockGenerator {
     }
   }
 
+  /// 执行受支持的随机占位符，统一校验参数类型和范围，不执行脚本。
   Object? _call(String name, List<Object?> args) {
+    /// 检查占位符实参数量是否位于支持范围内。
     void arity(int min, int max) {
       if (args.length < min || args.length > max) _fail('@$name 参数数量无效');
     }
 
+    /// 读取指定位置的整数参数；缺省使用默认值，类型不符则报错。
     int integerArg(int index, int fallback) {
       if (index >= args.length) return fallback;
       if (args[index] is! int) _fail('@$name 参数须为整数');
       return args[index] as int;
     }
 
+    /// 读取指定位置的字符串参数；缺省使用默认值，类型不符则报错。
     String stringArg(int index, String fallback) {
       if (index >= args.length) return fallback;
       if (args[index] is! String) _fail('@$name 参数须为字符串');

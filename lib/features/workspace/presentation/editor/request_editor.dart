@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:weils_api/core/theme/app_theme.dart';
 import 'package:weils_api/shared/widgets/section_tabs.dart';
+
 import '../../domain/entities/workspace_entities.dart';
 import '../formatters/workspace_messages.dart';
 import 'view_models/request_editor_view_model.dart';
@@ -23,6 +24,7 @@ class RequestEditor extends StatefulWidget {
   final RequestEditorViewModel viewModel;
   final RequestExecutionViewModel execution;
   final VoidCallback onSave;
+  /// 创建请求编辑器的分区选择与输入焦点状态。
   @override
   State<RequestEditor> createState() => _RequestEditorState();
 }
@@ -34,6 +36,7 @@ class _RequestEditorState extends State<RequestEditor> {
   double? _requestHeight;
   RequestEditorViewModel get c => widget.viewModel;
   RequestExecutionViewModel get execution => widget.execution;
+  /// 释放请求名称和 URL 的文本输入控制器。
   @override
   void dispose() {
     _name.dispose();
@@ -41,6 +44,7 @@ class _RequestEditorState extends State<RequestEditor> {
     super.dispose();
   }
 
+  /// 组合请求信息、参数编辑与响应面板，并连接草稿更新、发送和取消操作。
   @override
   Widget build(BuildContext context) => ListenableBuilder(
     listenable: Listenable.merge([c, execution]),
@@ -64,6 +68,7 @@ class _RequestEditorState extends State<RequestEditor> {
             request: r,
             urlController: _url,
             onMethodChanged: c.setMethod,
+            onProtocolChanged: c.setProtocol,
             onUrlChanged: c.setUrl,
             onSend: () => execution.send(c.request),
             onCancel: execution.cancel,
@@ -89,6 +94,7 @@ class _RequestEditorState extends State<RequestEditor> {
                 final height =
                     (_requestHeight ?? (_tab == 'Headers' ? 260.0 : 184.0))
                         .clamp(120.0, maximum);
+                /// 为参数或 Headers 创建共享条目表，按类型绑定增删改操作与默认请求头。
                 Widget table(EntryKind kind, List<Entry> entries) => EntryTable(
                   key: ValueKey('${r.id}-${kind.name}'),
                   entries: entries,
@@ -173,6 +179,7 @@ class _RequestEditorState extends State<RequestEditor> {
                     Expanded(
                       child: ResponsePane(
                         response: execution.responseFor(r.id),
+                        sseRequested: r.protocol == 'sse',
                         running: execution.runningId == r.id,
                       ),
                     ),

@@ -14,6 +14,7 @@ import 'widgets/mock_input.dart';
 class MockWorkspace extends StatefulWidget {
   const MockWorkspace({super.key, required this.viewModel});
   final MockViewModel viewModel;
+  /// 创建 Mock 工作区的操作提示与复制交互状态。
   @override
   State<MockWorkspace> createState() => _MockWorkspaceState();
 }
@@ -22,14 +23,17 @@ class _MockWorkspaceState extends State<MockWorkspace> {
   late String _port = '${widget.viewModel.snapshot.mockPort}';
   String? _selectedScenario;
   MockViewModel get vm => widget.viewModel;
+  /// 在工作区显示保存、复制等操作的反馈。
   void _toast(String text) => ScaffoldMessenger.of(context).showSnackBar(
     SnackBar(content: Text(text), duration: const Duration(seconds: 2)),
   );
+  /// 将指定文本复制到剪贴板，并在页面仍有效时提示结果。
   Future<void> _copy(String text) async {
     await Clipboard.setData(ClipboardData(text: text));
     if (mounted) _toast('已复制');
   }
 
+  /// 组合 Mock 服务控制、接口配置和响应场景编辑区域。
   @override
   Widget build(BuildContext context) => ListenableBuilder(
     listenable: vm,
@@ -328,6 +332,7 @@ class _ScenarioEditor extends StatefulWidget {
   });
   final MockScenario scenario;
   final void Function(MockScenario Function(MockScenario)) onChanged;
+  /// 创建场景选择、模板编辑与生成预览的局部状态。
   @override
   State<_ScenarioEditor> createState() => _ScenarioEditorState();
 }
@@ -336,6 +341,7 @@ class _ScenarioEditorState extends State<_ScenarioEditor> {
   String _tab = '响应正文', _preview = '';
   String? _error;
   MockScenario get s => widget.scenario;
+  /// 按正文类型生成模板预览，并将校验异常转为编辑器提示。
   void _previewBody() {
     try {
       setState(() {
@@ -352,6 +358,7 @@ class _ScenarioEditorState extends State<_ScenarioEditor> {
     }
   }
 
+  /// 场景正文或正文类型变化时清除过期预览与错误提示。
   @override
   void didUpdateWidget(_ScenarioEditor oldWidget) {
     super.didUpdateWidget(oldWidget);
@@ -362,6 +369,7 @@ class _ScenarioEditorState extends State<_ScenarioEditor> {
     }
   }
 
+  /// 打开字段表单生成器，并将返回的 JSON 模板更新到当前场景。
   Future<void> _fields() async {
     final template = await openMockFieldBuilder(context);
     if (template == null || !mounted) return;
@@ -379,6 +387,7 @@ class _ScenarioEditorState extends State<_ScenarioEditor> {
     }
   }
 
+  /// 构建单条场景条件的来源、字段、期望值与删除操作。
   void _condition(int index, MockCondition Function(MockCondition) update) =>
       widget.onChanged(
         (s) => s.copyWith(
@@ -388,6 +397,7 @@ class _ScenarioEditorState extends State<_ScenarioEditor> {
           ],
         ),
       );
+  /// 展示场景切换、响应配置、条件编辑与模板预览。
   @override
   Widget build(BuildContext context) => Padding(
     padding: const EdgeInsets.fromLTRB(20, 4, 20, 14),
@@ -685,6 +695,7 @@ class _ScenarioEditorState extends State<_ScenarioEditor> {
 
 class _TemplateHelp extends StatelessWidget {
   const _TemplateHelp();
+  /// 展示模板字段规则、随机占位符及路径引用的内置说明。
   @override
   Widget build(BuildContext context) => AlertDialog(
     title: const Text('JSON 模板语法'),

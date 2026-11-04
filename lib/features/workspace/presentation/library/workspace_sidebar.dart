@@ -18,6 +18,7 @@ class WorkspaceSidebar extends StatelessWidget {
   final TextEditingController searchController;
   final ValueChanged<String> onSearch;
   final Widget child;
+  /// 组合接口或历史侧栏的标题、搜索输入和功能列表。
   @override
   Widget build(BuildContext context) => DecoratedBox(
     decoration: const BoxDecoration(

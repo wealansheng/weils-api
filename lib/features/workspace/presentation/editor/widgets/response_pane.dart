@@ -4,16 +4,26 @@ import 'package:flutter/services.dart';
 import 'package:weils_api/core/theme/app_theme.dart';
 import 'package:weils_api/core/utils/json_format.dart';
 import 'package:weils_api/features/workspace/domain/entities/response_record.dart';
+
 import '../../formatters/workspace_messages.dart';
+
 import 'package:weils_api/shared/widgets/code_view.dart';
 import 'package:weils_api/shared/widgets/section_tabs.dart';
 import 'package:weils_api/shared/widgets/empty_message.dart';
+
 import 'response_headers_table.dart';
+import 'sse_response_pane.dart';
 
 class ResponsePane extends StatefulWidget {
-  const ResponsePane({super.key, this.response, this.running = false});
+  const ResponsePane({
+    super.key,
+    this.response,
+    this.running = false,
+    this.sseRequested = false,
+  });
   final ResponseRecord? response;
-  final bool running;
+  final bool running, sseRequested;
+  /// 创建响应分区、格式化开关与正文格式化缓存。
   @override
   State<ResponsePane> createState() => _ResponsePaneState();
 }
@@ -22,23 +32,34 @@ class _ResponsePaneState extends State<ResponsePane> {
   String _tab = 'Body';
   bool _pretty = true;
   String _formatted = '';
+  /// 初始化普通响应的 JSON 格式化缓存，SSE 响应交由专用面板展示。
   @override
   void initState() {
     super.initState();
-    _formatted = prettyJson(widget.response?.body ?? '');
+    _formatted = widget.response?.sseRequested == true
+        ? ''
+        : prettyJson(widget.response?.body ?? '');
   }
 
+  /// 响应实例变化时重新生成普通正文的格式化缓存。
   @override
   void didUpdateWidget(ResponsePane old) {
     super.didUpdateWidget(old);
     if (!identical(old.response, widget.response)) {
-      _formatted = prettyJson(widget.response?.body ?? '');
+      _formatted = widget.response?.sseRequested == true
+          ? ''
+          : prettyJson(widget.response?.body ?? '');
     }
   }
 
+  /// 根据请求模式选择普通响应或 SSE 面板，展示状态、正文、Headers 与复制操作。
   @override
   Widget build(BuildContext context) {
     final r = widget.response;
+    if (r?.sseRequested == true ||
+        (widget.sseRequested && (widget.running || r == null))) {
+      return SseResponsePane(response: r, running: widget.running);
+    }
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [

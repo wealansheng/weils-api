@@ -7,7 +7,7 @@ import '../../features/workspace/presentation/editor/view_models/request_executi
 import '../../shared/widgets/input_dialogs.dart';
 import '../../features/mock/domain/repositories/mock_server.dart';
 
-/// Application orchestration: prompts are UI, persistence remains a repository command.
+/// 协调关闭与退出流程；交互提示由此处处理，持久化仍通过仓库执行。
 class CloseCoordinator {
   CloseCoordinator(
     this.context,
@@ -23,18 +23,23 @@ class CloseCoordinator {
   final MockServer? mockServer;
   bool _closing = false;
   WorkspaceSnapshot get snapshot => repository.state.snapshot;
+  /// 保存指定草稿，并将仓库结果转换为关闭流程使用的成功标记。
   Future<bool> _saveDraft(RequestSpec draft) async =>
       (await repository.saveDraft(draft.id)).succeeded;
+  /// 将工作区写入磁盘；退出时可仅在落盘快照中排除未保存草稿。
   Future<bool> _flush({bool discardDirtyDrafts = false}) async =>
       (await repository.flush(discardDirtyDrafts: discardDirtyDrafts))
           .succeeded;
+  /// 在当前页面显示短暂的操作结果提示。
   void _toast(String text) => ScaffoldMessenger.of(context).showSnackBar(
     SnackBar(content: Text(text), duration: const Duration(seconds: 2)),
   );
+  /// 保存当前接口，仅在保存成功且页面仍有效时提示用户。
   Future<void> save(RequestSpec draft) async {
     if (await _saveDraft(draft) && context.mounted) _toast('接口已保存');
   }
 
+  /// 询问未保存修改的处理方式，区分关闭单个标签页与退出整个应用。
   Future<String?> _dirtyChoice({bool window = false}) => showDialog<String>(
     context: context,
     barrierDismissible: false,
@@ -70,9 +75,10 @@ class CloseCoordinator {
       ],
     ),
   );
+  /// 关闭草稿前处理未保存修改；运行中的请求须先停止，保存失败则保留标签页。
   Future<void> closeDraft(RequestSpec draft) async {
     if (execution.runningId == draft.id) {
-      _toast('请先取消当前请求，再关闭标签页');
+      _toast(draft.protocol == 'sse' ? '请先停止当前请求，再关闭标签页' : '请先取消当前请求，再关闭标签页');
       return;
     }
     if (snapshot.isDirty(draft)) {
@@ -84,6 +90,7 @@ class CloseCoordinator {
     await _flush();
   }
 
+  /// 协调退出确认、请求取消、草稿保存和资源关闭，避免重复触发退出流程。
   Future<void> closeWindow() async {
     if (_closing || !context.mounted) return;
     _closing = true;
@@ -107,6 +114,7 @@ class CloseCoordinator {
           : 'save';
       if (choice == null || choice == 'cancel') return;
       await execution.stop();
+      /// 根据退出选择保存接口或排除未保存草稿；失败时保留内存编辑，供重试或取消退出。
       Future<bool> persistForExit() async {
         if (choice == 'save') {
           for (final draft
@@ -124,8 +132,7 @@ class CloseCoordinator {
             }
           }
         }
-        // Apply discard to the persisted snapshot only. If persistence fails
-        // and the user cancels exit, their live edits remain available.
+        // 仅从落盘快照排除放弃的草稿；保存失败并取消退出时，内存编辑仍保留。
         return _flush(discardDirtyDrafts: choice == 'discard');
       }
 

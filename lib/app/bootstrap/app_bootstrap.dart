@@ -8,6 +8,7 @@ import '../../features/workspace/data/repositories/http_request_gateway.dart';
 import '../../features/workspace/data/repositories/local_workspace_repository.dart';
 import '../dependencies/app_dependencies.dart';
 
+/// 创建生产环境依赖，连接本地工作区、网络传输和桌面窗口服务。
 AppDependencies createProductionDependencies() => AppDependencies(
   workspace: LocalWorkspaceRepository(
     LocalWorkspaceSource(

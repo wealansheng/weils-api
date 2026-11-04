@@ -15,6 +15,7 @@ import 'app_dependencies.dart';
 import '../../features/mock/domain/repositories/mock_server.dart';
 import '../../features/mock/presentation/view_models/mock_view_model.dart';
 
+/// 向组件树提供应用级服务与视图模型，已有实例的生命周期由依赖容器管理。
 List<SingleChildWidget> appProviders(AppDependencies dependencies) => [
   Provider<MockServer>.value(value: dependencies.mockServer),
   ChangeNotifierProvider<MockViewModel>.value(value: dependencies.mocking),

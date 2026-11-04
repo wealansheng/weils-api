@@ -14,6 +14,7 @@ class SectionTabs extends StatelessWidget {
   final String value;
   final ValueChanged<String> onChanged;
   final Widget? trailing;
+  /// 绘制分区标签和可选尾部操作，将分区切换回传给父组件。
   @override
   Widget build(BuildContext context) => Container(
     height: 40,

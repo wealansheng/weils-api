@@ -22,6 +22,7 @@ class EntryTable extends StatelessWidget {
   final String kind;
   final List<DefaultHeader> defaults;
   final bool stickyAdd;
+  /// 构建添加参数或 Header 的操作入口。
   Widget _add() => Align(
     alignment: Alignment.centerLeft,
     child: TextButton.icon(
@@ -30,6 +31,7 @@ class EntryTable extends StatelessWidget {
       label: Text('添加$kind', style: const TextStyle(fontSize: 12)),
     ),
   );
+  /// 以只读行显示自动生成的 Header，并提示可通过同名自定义项覆盖。
   Widget _defaultRow(DefaultHeader header) => Container(
     key: ValueKey('default-header-${header.name.toLowerCase()}'),
     height: 36,
@@ -92,6 +94,7 @@ class EntryTable extends StatelessWidget {
       ],
     ),
   );
+  /// 组合默认请求头与可编辑条目，使用稳定标识维持行状态和焦点。
   @override
   Widget build(BuildContext context) => Column(
     children: [
@@ -148,6 +151,7 @@ class EntryTable extends StatelessWidget {
               return _add();
             }
             final e = entries[customIndex];
+            /// 构建当前条目的单元格输入框，以条目标识和列名保持编辑状态。
             Widget field(
               String key,
               String value,

@@ -6,6 +6,7 @@ class NoticeBanner extends StatelessWidget {
   const NoticeBanner({super.key, required this.message, this.onDismiss});
   final String message;
   final VoidCallback? onDismiss;
+  /// 展示工作区通知，并在允许时提供关闭提示入口。
   @override
   Widget build(BuildContext context) => Container(
     color: const Color(0xFFFFF6E6),

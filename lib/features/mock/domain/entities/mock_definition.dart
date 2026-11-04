@@ -13,8 +13,9 @@ class MockCondition {
   final MockConditionSource source;
   final String key;
 
-  /// Header text, or a JSON encoded value for a Body condition.
+  /// Header 条件使用原始文本，Body 条件使用 JSON 编码的期望值。
   final String expected;
+  /// 复制匹配条件，仅替换指定的来源、字段或期望值。
   MockCondition copyWith({
     MockConditionSource? source,
     String? key,
@@ -52,6 +53,7 @@ class MockScenario {
   final String id, name, bodyType, body, headersText;
   final List<MockCondition> conditions;
   final int statusCode, delayMs;
+  /// 将 Headers 文本解析为只读字符串映射，格式无效时抛出可展示的校验异常。
   Map<String, String> get headers {
     try {
       return Map.unmodifiable(
@@ -63,6 +65,7 @@ class MockScenario {
   }
 
   bool get isDefault => conditions.isEmpty;
+  /// 保留场景标识并复制配置；显式传入的 Headers 文本优先于映射参数。
   MockScenario copyWith({
     String? name,
     List<MockCondition>? conditions,
@@ -123,6 +126,7 @@ class MockDefinition {
   final String id, name, method, path;
   final bool enabled;
   final List<MockScenario> scenarios;
+  /// 保留 Mock 标识并复制接口配置，未指定的字段沿用原值。
   MockDefinition copyWith({
     String? name,
     bool? enabled,
@@ -137,6 +141,7 @@ class MockDefinition {
     path: path ?? this.path,
     scenarios: scenarios ?? this.scenarios,
   );
+  /// 将具名参数统一为占位符，用于检测方法相同且路径结构重复的路由。
   String get routeShape =>
       path.split('/').map((s) => s.startsWith(':') ? ':' : s).join('/');
   @override
@@ -153,19 +158,21 @@ class MockDefinition {
       Object.hash(id, name, enabled, method, path, Object.hashAll(scenarios));
 }
 
-/// Configuration errors include a field path, so both editor and HTTP failures
-/// can point at the same invalid input without infrastructure dependencies.
+/// Mock 配置校验异常，供编辑器与 HTTP 响应共用，不依赖基础设施错误类型。
 class MockValidationException implements Exception {
   const MockValidationException(this.message);
   final String message;
+  /// 返回可直接用于界面提示和错误响应的校验信息。
   @override
   String toString() => message;
 }
 
+/// 校验路由结构、冲突、场景及条件，并检查路径引用和服务托管的 Headers。
 void validateMockDefinition(
   MockDefinition definition,
   Iterable<MockDefinition> saved,
 ) {
+  /// 终止当前定义校验，并将具体原因包装为 Mock 校验异常。
   void fail(String text) => throw MockValidationException(text);
   if (!['GET', 'POST', 'PUT', 'DELETE'].contains(definition.method)) {
     fail('不支持的 HTTP 方法');
@@ -212,8 +219,7 @@ void validateMockDefinition(
     fail('只允许一个无条件的默认响应');
   }
   for (final scenario in definition.scenarios) {
-    // References are valid at save time even though actual values are only
-    // available per HTTP request. Check both JSON and plain-text responses.
+    // 保存时校验引用的参数是否存在；实际值在请求时填入，JSON 和文本正文均需检查。
     for (final token in RegExp(
       r'\{\{path\.([^{}]+)\}\}',
     ).allMatches(scenario.body)) {

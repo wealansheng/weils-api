@@ -22,9 +22,12 @@ class TabsViewModel extends RepositoryViewModel<_TabsState> {
   String? get activeId => value.activeId;
   RequestSpec? get active =>
       value.drafts.where((d) => d.id == activeId).firstOrNull;
+  /// 查询指定请求草稿是否存在未保存修改。
   bool isDirty(RequestSpec draft) =>
       value.requests.where((r) => r.id == draft.id).firstOrNull != draft;
+  /// 将标签页选择交给仓库，并持久化当前选中项。
   void selectTab(String? id) => repository.selectTab(id);
+  /// 将拖拽后的标签页顺序交给仓库更新。
   void reorderDraft(int oldIndex, int newIndex) =>
       repository.reorderDraft(oldIndex, newIndex);
 }

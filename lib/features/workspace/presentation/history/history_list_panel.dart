@@ -11,10 +11,13 @@ class HistoryListPanel extends StatelessWidget {
   const HistoryListPanel({super.key, required this.viewModel});
   final HistoryViewModel viewModel;
   HistoryViewModel get c => viewModel;
+  /// 根据当前搜索条件判断历史请求是否应显示。
   bool _matches(RequestSpec request) => c.matches(request);
+  /// 构建历史列表的状态监听与空结果提示。
   @override
   Widget build(BuildContext context) =>
       ListenableBuilder(listenable: c, builder: (context, _) => _list());
+  /// 按日期组织历史记录，展示执行状态并支持选中详情。
   Widget _list() {
     final records = c.history.where((h) => _matches(h.request)).toList();
     if (records.isEmpty) {

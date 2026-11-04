@@ -4,9 +4,11 @@ import 'package:provider/provider.dart';
 
 import 'package:weils_api/core/theme/app_theme.dart';
 import 'package:weils_api/shared/widgets/input_dialogs.dart';
+
 import 'formatters/settings_messages.dart';
 import 'view_models/settings_view_model.dart';
 
+/// 打开全局设置弹窗，并创建由弹窗管理生命周期的设置视图模型。
 Future<void> openSettings(
   BuildContext context,
   SettingsViewModel Function() createViewModel,
@@ -25,30 +27,36 @@ Future<void> openSettings(
 class _SettingsDialog extends StatefulWidget {
   const _SettingsDialog({required this.viewModel});
   final SettingsViewModel viewModel;
+  /// 创建超时、SSE 捕获上限与数据目录的表单状态。
   @override
   State<_SettingsDialog> createState() => _SettingsDialogState();
 }
 
 class _SettingsDialogState extends State<_SettingsDialog> {
-  late final TextEditingController _timeout;
+  late final TextEditingController _timeout, _sseLimit;
   final _form = GlobalKey<FormState>();
   SettingsViewModel get vm => widget.viewModel;
   bool get _saving => vm.saving;
   bool get _choosing => vm.choosing;
   String? get _error =>
       vm.pickerFailed ? '无法打开目录选择器，请重试。' : settingsFailureMessage(vm.failure);
+  /// 使用已保存的超时与 SSE 上限初始化文本输入。
   @override
   void initState() {
     super.initState();
     _timeout = TextEditingController(text: '${vm.timeout}');
+    _sseLimit = TextEditingController(text: '${vm.sseMaxResponseMb}');
   }
 
+  /// 释放设置表单的输入控制器。
   @override
   void dispose() {
     _timeout.dispose();
+    _sseLimit.dispose();
     super.dispose();
   }
 
+  /// 展示并校验全局设置，协调目录选择、保存与历史清理操作。
   @override
   Widget build(BuildContext context) => ListenableBuilder(
     listenable: vm,
@@ -77,17 +85,41 @@ class _SettingsDialogState extends State<_SettingsDialog> {
                   const SizedBox(height: 10),
                   TextFormField(
                     enabled: !_saving && !_choosing,
+                    key: const ValueKey('request-timeout-seconds'),
                     controller: _timeout,
                     keyboardType: TextInputType.number,
                     inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                     decoration: const InputDecoration(
                       suffixText: '秒',
-                      helperText: '1–300 秒，适用于下一次发送的请求',
+                      helperText: '1–300 秒；SSE 仅限制收到响应头之前的等待',
                     ),
                     validator: (v) {
                       final n = int.tryParse(v ?? '');
                       return n == null || n < 1 || n > 300
                           ? '请填写 1–300 之间的整数'
+                          : null;
+                    },
+                  ),
+                  const SizedBox(height: 20),
+                  const Text(
+                    'SSE 捕获上限',
+                    style: TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                  const SizedBox(height: 10),
+                  TextFormField(
+                    key: const ValueKey('sse-max-response-mb'),
+                    enabled: !_saving && !_choosing,
+                    controller: _sseLimit,
+                    keyboardType: TextInputType.number,
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                    decoration: const InputDecoration(
+                      suffixText: 'MB',
+                      helperText: '1–50 MB，达到后停止；仅影响后续 SSE 请求',
+                    ),
+                    validator: (v) {
+                      final n = int.tryParse(v ?? '');
+                      return n == null || n < 1 || n > 50
+                          ? '请填写 1–50 之间的整数'
                           : null;
                     },
                   ),
@@ -218,7 +250,10 @@ class _SettingsDialogState extends State<_SettingsDialog> {
                 ? null
                 : () async {
                     if (!_form.currentState!.validate()) return;
-                    final ok = await vm.save(int.parse(_timeout.text));
+                    final ok = await vm.save(
+                      int.parse(_timeout.text),
+                      sseMaxResponseMb: int.parse(_sseLimit.text),
+                    );
                     if (context.mounted) {
                       if (ok) {
                         Navigator.pop(context);

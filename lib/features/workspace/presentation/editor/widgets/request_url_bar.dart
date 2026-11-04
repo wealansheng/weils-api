@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:weils_api/core/theme/app_theme.dart';
 import 'package:weils_api/features/workspace/domain/entities/request_spec.dart';
 import 'package:weils_api/shared/widgets/anchored_select.dart';
+
 import '../../formatters/method_style.dart';
 
 class RequestUrlBar extends StatelessWidget {
@@ -11,6 +12,7 @@ class RequestUrlBar extends StatelessWidget {
     required this.request,
     required this.urlController,
     required this.onMethodChanged,
+    required this.onProtocolChanged,
     required this.onUrlChanged,
     required this.onSend,
     required this.onCancel,
@@ -19,11 +21,12 @@ class RequestUrlBar extends StatelessWidget {
   });
   final RequestSpec request;
   final TextEditingController urlController;
-  final ValueChanged<String> onMethodChanged, onUrlChanged;
+  final ValueChanged<String> onMethodChanged, onUrlChanged, onProtocolChanged;
   final VoidCallback onSend, onCancel;
   final bool running;
   final String? runningId;
   RequestSpec get r => request;
+  /// 展示协议、方法和 URL 输入；请求运行时禁用协议切换，并提供发送或停止入口。
   @override
   Widget build(BuildContext context) => Padding(
     padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -39,6 +42,21 @@ class RequestUrlBar extends StatelessWidget {
               ),
               child: Row(
                 children: [
+                  AnchoredSelect(
+                    id: 'request-protocol',
+                    label: '请求模式',
+                    value: r.protocol,
+                    width: 88,
+                    height: 38,
+                    menuWidth: 120,
+                    enabled: runningId != r.id,
+                    options: const [
+                      SelectOption('http', 'HTTP'),
+                      SelectOption('sse', 'SSE'),
+                    ],
+                    onChanged: onProtocolChanged,
+                  ),
+                  Container(width: 1, height: 24, color: AppColors.line),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 3),
                     child: AnchoredSelect(
@@ -106,7 +124,11 @@ class RequestUrlBar extends StatelessWidget {
                     : () {
                         onSend();
                       },
-                child: Text(runningId == r.id ? '取消' : '发送'),
+                child: Text(
+                  runningId == r.id
+                      ? (r.protocol == 'sse' ? '停止' : '取消')
+                      : '发送',
+                ),
               ),
             ),
           ),

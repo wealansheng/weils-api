@@ -1,5 +1,6 @@
 import 'package:weils_api/core/errors/app_failure.dart';
 
+/// 将设置保存或目录迁移失败转换为对应的中文提示。
 String? settingsFailureMessage(AppFailure? failure) => switch (failure?.code) {
   null => null,
   FailureCode.conflict => '所选目录已有工作区数据，请选择其他文件夹。',

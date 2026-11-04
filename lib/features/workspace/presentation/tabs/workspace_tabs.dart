@@ -14,6 +14,7 @@ class WorkspaceTabs extends StatelessWidget {
   final TabsViewModel viewModel;
   final ValueChanged<RequestSpec> onClose;
   TabsViewModel get c => viewModel;
+  /// 展示可重排的请求标签页，将选中、拖拽和关闭事件传给对应流程。
   @override
   Widget build(BuildContext context) => ListenableBuilder(
     listenable: c,

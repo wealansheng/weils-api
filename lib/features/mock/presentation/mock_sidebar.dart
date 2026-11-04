@@ -7,6 +7,7 @@ import 'view_models/mock_view_model.dart';
 class MockSidebar extends StatelessWidget {
   const MockSidebar({super.key, required this.viewModel});
   final MockViewModel viewModel;
+  /// 展示可搜索的 Mock 列表、启用状态与新建入口。
   @override
   Widget build(BuildContext context) => ListenableBuilder(
     listenable: viewModel,

@@ -1,6 +1,7 @@
 import '../domain/entities/mock_definition.dart';
 
 abstract final class MockJson {
+  /// 从本地 JSON 还原 Mock 定义、响应场景及匹配条件。
   static MockDefinition decode(Map<String, dynamic> j) => MockDefinition(
     id: j['id'] as String,
     name: j['name'] as String,
@@ -32,6 +33,7 @@ abstract final class MockJson {
         )
         .toList(),
   );
+  /// 将 Mock 定义及其场景、条件转换为可持久化的 JSON 结构。
   static Map<String, dynamic> encode(MockDefinition d) => {
     'id': d.id,
     'name': d.name,

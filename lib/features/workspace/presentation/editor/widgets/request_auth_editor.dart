@@ -13,6 +13,7 @@ class RequestAuthEditor extends StatefulWidget {
   });
   final RequestSpec request;
   final ValueChanged<String> onChanged, onTypeChanged;
+  /// 创建 Bearer Token 的文本输入状态。
   @override
   State<RequestAuthEditor> createState() => _RequestAuthEditorState();
 }
@@ -22,12 +23,14 @@ class _RequestAuthEditorState extends State<RequestAuthEditor> {
     text: widget.request.token,
   );
   RequestSpec get r => widget.request;
+  /// 释放 Bearer Token 的文本输入控制器。
   @override
   void dispose() {
     _token.dispose();
     super.dispose();
   }
 
+  /// 展示认证类型和 Bearer Token 输入，并将修改回传给草稿。
   @override
   Widget build(BuildContext context) => ListView(
     padding: const EdgeInsets.only(top: 12),

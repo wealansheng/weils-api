@@ -8,8 +8,10 @@ import 'package:weils_api/shared/widgets/section_tabs.dart';
 import '../editor/widgets/response_pane.dart';
 import '../formatters/method_style.dart';
 
+/// 将时间格式化为补零的时分秒，用于历史记录显示。
 String clockLabel(DateTime time) =>
     '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}:${time.second.toString().padLeft(2, '0')}';
+/// 生成历史记录的日期分组标签。
 String dateLabel(DateTime time) =>
     '${time.year}-${time.month.toString().padLeft(2, '0')}-${time.day.toString().padLeft(2, '0')}';
 
@@ -21,15 +23,18 @@ class HistoryDetail extends StatefulWidget {
   });
   final HistoryRecord record;
   final VoidCallback onReplay;
+  /// 创建历史详情中的请求分区选择状态。
   @override
   State<HistoryDetail> createState() => _HistoryDetailState();
 }
 
 class _HistoryDetailState extends State<HistoryDetail> {
   String _tab = 'Params';
+  /// 展示历史请求快照与最终响应，提供复制和重新编辑入口。
   @override
   Widget build(BuildContext context) {
     final r = widget.record.request;
+    /// 按分区生成历史请求的参数、启用的自定义 Headers、正文或隐藏 Token 的认证摘要。
     String requestText() => switch (_tab) {
       'Params' =>
         r.effectiveUri.queryParametersAll.entries

@@ -7,6 +7,7 @@ class ResponseHeadersTable extends StatelessWidget {
 
   final Map<String, String> headers;
 
+  /// 使用可滚动表格展示响应 Headers，支持选择和复制名称与值。
   @override
   Widget build(BuildContext context) => Padding(
     padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
@@ -14,6 +15,7 @@ class ResponseHeadersTable extends StatelessWidget {
       builder: (context, constraints) {
         final nameWidth = (constraints.maxWidth * .32).clamp(160.0, 280.0);
         final entries = headers.entries.toList();
+        /// 构建标题或数据行，统一列宽和边框样式。
         Widget row(String name, String value, {bool heading = false}) => Table(
           columnWidths: {0: FixedColumnWidth(nameWidth)},
           defaultVerticalAlignment: TableCellVerticalAlignment.top,

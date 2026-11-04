@@ -43,7 +43,12 @@ New-Item -ItemType Directory -Force -Path $outputDirectory | Out-Null
 $stagingDirectory = Join-Path $outputDirectory ('.staging-' + [guid]::NewGuid().ToString('N'))
 $stagingArchive = "$stagingDirectory.zip"
 
-# Only remove exact children of build/releases, including temporary packaging files.
+<#
+.SYNOPSIS
+仅删除 build/releases 下的直接子项，包括旧发布包与临时打包文件。
+.DESCRIPTION
+删除前解析绝对路径并校验父目录，避免递归删除超出发布输出目录。
+#>
 function Remove-ReleaseOutput([string]$Path) {
     $absolutePath = [IO.Path]::GetFullPath($Path)
     if ([IO.Path]::GetDirectoryName($absolutePath) -ne $outputDirectory) {
@@ -55,14 +60,14 @@ function Remove-ReleaseOutput([string]$Path) {
 }
 
 try {
-    # Keep the original Flutter output intact for subsequent builds and flutter run.
+    # 复制到暂存目录打包，保留 Flutter 原始构建产物供后续构建和运行使用。
     Copy-Item -LiteralPath $releaseDirectory -Destination $stagingDirectory -Recurse
     Rename-Item -LiteralPath (Join-Path $stagingDirectory 'weils_api.exe') -NewName $executableName
 
     Add-Type -AssemblyName System.IO.Compression.FileSystem
     [IO.Compression.ZipFile]::CreateFromDirectory($stagingDirectory, $stagingArchive)
 
-    # Replace an existing release only after both build and packaging succeed.
+    # 仅在构建与打包都成功后替换已有版本。
     if ($Force) {
         Remove-ReleaseOutput $bundleDirectory
         Remove-ReleaseOutput $archivePath

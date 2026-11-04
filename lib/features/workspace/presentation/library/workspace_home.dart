@@ -6,6 +6,7 @@ import 'package:weils_api/shared/widgets/api_mark.dart';
 class WorkspaceHome extends StatelessWidget {
   const WorkspaceHome({super.key, required this.onCreate});
   final VoidCallback onCreate;
+  /// 展示接口管理空状态、新建入口与常用快捷键说明。
   @override
   Widget build(BuildContext context) => Center(
     child: Padding(

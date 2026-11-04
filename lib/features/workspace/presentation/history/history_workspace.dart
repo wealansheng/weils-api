@@ -15,6 +15,7 @@ class HistoryWorkspace extends StatelessWidget {
   final HistoryViewModel viewModel;
   final ValueChanged<HistoryRecord> onReplay;
   final VoidCallback onLeave;
+  /// 显示选中历史的详情，提供重发与返回接口管理入口。
   @override
   Widget build(BuildContext context) => ListenableBuilder(
     listenable: viewModel,

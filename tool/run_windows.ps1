@@ -10,8 +10,7 @@ $projectDirectory = Split-Path -Parent $PSScriptRoot
 $localDirectory = Join-Path $projectDirectory '.local-data'
 $temporaryDirectory = Join-Path $projectDirectory 'build\dev-temp'
 
-# A local workspace avoids inheriting inaccessible user-profile/data paths in
-# restricted Windows development sessions. Never overwrite an existing copy.
+# 使用项目内的数据目录，避免开发进程继承无法访问的用户目录；保留已有本地副本。
 New-Item -ItemType Directory -Force -Path $localDirectory | Out-Null
 New-Item -ItemType Directory -Force -Path $temporaryDirectory | Out-Null
 $destinationFile = Join-Path $localDirectory 'workspace.json'
@@ -40,8 +39,7 @@ if (-not (Test-Path -LiteralPath $destinationFile)) {
     }
     $sourceFile = Join-Path $sourceDirectory 'workspace.json'
     if (Test-Path -LiteralPath $sourceFile -PathType Leaf) {
-        # Stage the copy before publishing the main file; a failed copy cannot
-        # be mistaken for an initialized local workspace on the next launch.
+        # 先暂存副本再生成主文件，避免下次启动将复制失败的文件误认为已初始化的数据。
         $stagingFile = "$destinationFile.importing"
         if (Test-Path -LiteralPath $stagingFile) {
             throw "An unfinished workspace import exists: $stagingFile. Check it before retrying."
