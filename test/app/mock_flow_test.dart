@@ -167,6 +167,82 @@ void main() {
     );
   }
 
+  for (final bodyType in ['json', 'text']) {
+    testWidgets('Mock $bodyType response Tab indents without losing focus', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(1280, 720);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final storage = MemoryStorage();
+      final c = WorkspaceFixture(storage: storage);
+      addTearDown(c.dispose);
+      await c.initialize();
+      final mock = c.dependencies.mocking;
+      mock.create();
+      mock.updateScenario(
+        mock.active!.scenarios.single.id,
+        (s) => s.copyWith(bodyType: bodyType),
+      );
+      await tester.pumpWidget(WeilsApp(dependencies: c.dependencies));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Mock 管理').first);
+      await tester.pumpAndSettle();
+      final field = find.descendant(
+        of: find.byKey(const ValueKey('mock-body')),
+        matching: find.byType(TextField),
+      );
+      await tester.enterText(field, '{\n"ok": true\n}');
+      await tester.pump();
+      await tester.tap(find.byKey(const ValueKey('preview-mock')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('mock-preview')), findsOneWidget);
+      await tester.tap(field);
+      final controller = tester.widget<TextField>(field).controller!;
+      final editable = tester.widget<EditableText>(
+        find.descendant(of: field, matching: find.byType(EditableText)),
+      );
+      controller.selection = const TextSelection.collapsed(offset: 2);
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.pump();
+      expect(controller.text, '{\n  "ok": true\n}');
+      expect(controller.selection, const TextSelection.collapsed(offset: 4));
+      expect(editable.focusNode.hasFocus, isTrue);
+      expect(mock.active!.scenarios.single.body, controller.text);
+      expect(find.byKey(const ValueKey('mock-preview')), findsNothing);
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.pump();
+      expect(controller.text, '{\n    "ok": true\n}');
+      controller.selection = const TextSelection(
+        baseOffset: 6,
+        extentOffset: 2,
+      );
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.pump();
+      expect(controller.text, '{\n  "ok": true\n}');
+      expect(controller.selection, const TextSelection.collapsed(offset: 4));
+      expect(editable.focusNode.hasFocus, isTrue);
+
+      await tester.enterText(field, '');
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.pump();
+      expect(controller.text, '  ');
+      await tester.runAsync(c.flush);
+      expect(storage.data!['mockDrafts'][0]['scenarios'][0]['body'], '  ');
+
+      await tester.sendKeyDownEvent(LogicalKeyboardKey.shiftLeft);
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.sendKeyUpEvent(LogicalKeyboardKey.shiftLeft);
+      await tester.pump();
+      expect(editable.focusNode.hasFocus, isFalse);
+      expect(controller.text, '  ');
+      expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox.shrink());
+    });
+  }
+
   testWidgets('Mock errors, exit protection, discard, and service ownership', (
     tester,
   ) async {

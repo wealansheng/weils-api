@@ -617,6 +617,7 @@ class _ScenarioEditorState extends State<_ScenarioEditor> {
                     label: s.bodyType == 'json' ? '响应 JSON 模板' : '响应文本',
                     expand: true,
                     monospace: true,
+                    indentOnTab: true,
                     onChanged: (v) =>
                         widget.onChanged((s) => s.copyWith(body: v)),
                   ),
