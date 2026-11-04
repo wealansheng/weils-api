@@ -44,7 +44,7 @@ class MockScenario {
     Map<String, String> headers = const {},
     String? headersText,
     this.bodyType = 'json',
-    this.body = '{\n  "message": "ok"\n}',
+    this.body = '{\n  "code": 200,\n  "message": "success",\n  "data": "OK"\n}',
     this.delayMs = 0,
   }) : id = id ?? newId(),
        conditions = List.unmodifiable(conditions),

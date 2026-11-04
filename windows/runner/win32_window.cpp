@@ -3,6 +3,8 @@
 #include <dwmapi.h>
 #include <flutter_windows.h>
 
+#include <algorithm>
+
 #include "resource.h"
 
 namespace {
@@ -122,7 +124,8 @@ Win32Window::~Win32Window() {
 
 bool Win32Window::Create(const std::wstring& title,
                          const Point& origin,
-                         const Size& size) {
+                         const Size& size,
+                         bool center) {
   Destroy();
 
   const wchar_t* window_class =
@@ -134,10 +137,27 @@ bool Win32Window::Create(const std::wstring& title,
   UINT dpi = FlutterDesktopGetDpiForMonitor(monitor);
   double scale_factor = dpi / 96.0;
 
+  int x = Scale(origin.x, scale_factor);
+  int y = Scale(origin.y, scale_factor);
+  int width = Scale(size.width, scale_factor);
+  int height = Scale(size.height, scale_factor);
+  if (center) {
+    MONITORINFO info{};
+    info.cbSize = sizeof(info);
+    if (GetMonitorInfo(monitor, &info)) {
+      // 使用扣除任务栏后的物理像素工作区，避免高 DPI 下窗口越界。
+      const int work_width = info.rcWork.right - info.rcWork.left;
+      const int work_height = info.rcWork.bottom - info.rcWork.top;
+      width = std::min(width, work_width);
+      height = std::min(height, work_height);
+      x = info.rcWork.left + (work_width - width) / 2;
+      y = info.rcWork.top + (work_height - height) / 2;
+    }
+  }
+
   HWND window = CreateWindow(
       window_class, title.c_str(), WS_OVERLAPPEDWINDOW,
-      Scale(origin.x, scale_factor), Scale(origin.y, scale_factor),
-      Scale(size.width, scale_factor), Scale(size.height, scale_factor),
+      x, y, width, height,
       nullptr, nullptr, GetModuleHandle(nullptr), this);
 
   if (!window) {
