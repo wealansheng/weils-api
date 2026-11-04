@@ -14,6 +14,14 @@ flutter build windows --release
 
 发布文件位于 `build/windows/x64/runner/Release/`。分发时需要保留整个目录，包括可执行文件旁的 DLL 和 `data/`，不能只复制 EXE。
 
+生成文件名带版本号的 Windows 发布目录和 ZIP：
+
+```powershell
+.\tool\build_release.ps1
+```
+
+脚本读取 `pubspec.yaml` 的 `version`，执行 Windows x64 Release 构建，将完整运行文件复制到 `build/releases/weils_api-<版本号>-windows-x64/`，其中 EXE 命名为 `weils_api-<版本号>.exe`，并生成同名 ZIP。例如 `version: 1.0.1+2` 对应 `weils_api-1.0.1+2-windows-x64.zip`。解压后从完整目录启动 EXE；原始 Flutter 构建目录保持不变。重复打包同一版本时使用 `.\tool\build_release.ps1 -Force` 替换已有产物。直接运行 `flutter build windows --release` 仍只生成原始构建目录。
+
 若开发进程遇到系统临时目录拒绝访问或本地数据保存失败，可运行 `.\tool\run_windows.ps1`，使用项目内可写目录并复制现有工作区；原数据保留，不修改系统权限。后续继续使用该脚本打开同一数据副本，细节见 [开发辅助](tool/README.md)。
 
 VS Code 已提供 `Weils API (Windows)` 启动配置，直接点击 `lib/main.dart` 上方的 Run / Debug 或按 F5，会自动准备目录并使用同一数据副本，无需先在终端运行脚本。
