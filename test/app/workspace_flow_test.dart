@@ -15,6 +15,7 @@ import '../support/workspace_fixture.dart';
 import 'package:weils_api/app.dart';
 import 'package:weils_api/features/workspace/presentation/editor/widgets/response_pane.dart';
 import 'package:weils_api/core/theme/app_theme.dart';
+import 'package:weils_api/features/workspace/data/models/workspace_json.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -1015,6 +1016,77 @@ void main() {
     );
   }
 
+  for (final size in [const Size(1440, 800), const Size(1280, 720)]) {
+    testWidgets(
+      'settings loads an existing workspace and resets cloned request editors at $size',
+      (tester) async {
+        final storage = RelocatingMemoryStorage();
+        final c = WorkspaceFixture(nativeWindow: true, storage: storage);
+        await c.initialize();
+        addTearDown(c.dispose);
+        final old = c.create(
+          RequestSpec(name: '旧工作区接口', url: 'http://old.example'),
+        );
+        c.responses[old.id] = ResponseRecord(body: '旧工作区响应');
+        final loaded = old.copyWith(
+          name: '目标工作区接口',
+          url: 'http://new.example',
+          protocol: 'sse',
+        );
+        storage.existingWorkspace = WorkspaceJson.encode(
+          WorkspaceSnapshot(
+            requests: [loaded],
+            drafts: [loaded],
+            activeId: loaded.id,
+            timeoutSeconds: 57,
+            sseMaxResponseMb: 8,
+          ),
+        );
+        const selected = r'D:\已有工作区';
+        const channel = MethodChannel('weils/window');
+        tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          channel,
+          (_) async => selected,
+        );
+        addTearDown(
+          () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+            channel,
+            null,
+          ),
+        );
+        final key = GlobalKey();
+        await show(tester, c, key, size);
+        expect(c.dependencies.execution.responseFor(old.id), isNotNull);
+        await tester.tap(find.text('设置'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const ValueKey('choose-data-directory')));
+        await tester.pumpAndSettle();
+        await capture(
+          tester,
+          key,
+          'settings-load-workspace-${size.width.toInt()}',
+        );
+        await tester.tap(find.text('保存设置'));
+        await tester.pumpAndSettle();
+        expect(find.text('保存设置'), findsNothing);
+        expect(c.active!.name, '目标工作区接口');
+        expect(c.timeoutSeconds, 57);
+        expect(c.snapshot.sseMaxResponseMb, 8);
+        expect(storage.directoryPath, selected);
+        expect(c.dependencies.execution.responseFor(old.id), isNull);
+        expect(
+          tester
+              .widget<TextField>(find.byKey(const ValueKey('request-url')))
+              .controller!
+              .text,
+          'http://new.example',
+        );
+        expect(tester.takeException(), isNull);
+        await tester.pumpWidget(const SizedBox.shrink());
+      },
+    );
+  }
+
   testWidgets(
     'directory picker and migration failures remain recoverable in settings',
     (tester) async {
@@ -1052,7 +1124,7 @@ void main() {
       );
       await tester.tap(find.text('保存设置'));
       await tester.pumpAndSettle();
-      expect(find.text('所选目录已有工作区数据，请选择其他文件夹。'), findsOneWidget);
+      expect(find.text('所选目录的工作区无法加载，请检查 workspace.json 及备份文件。'), findsOneWidget);
       expect(storage.relocations, 0);
       expect(c.timeoutSeconds, 30);
       await capture(tester, key, 'settings-directory-error');

@@ -16,7 +16,15 @@ class RequestExecutionViewModel extends ChangeNotifier {
   }) {
     _responses.addAll(initialResponses);
     _lastSnapshot = repository.state.snapshot;
+    _workspaceRevision = repository.state.workspaceRevision;
     _subscription = repository.changes.listen((state) {
+      if (_workspaceRevision != state.workspaceRevision) {
+        _workspaceRevision = state.workspaceRevision;
+        _responses.clear();
+        _validation = null;
+        _validationId = null;
+        _notify();
+      }
       if (identical(state.snapshot, _lastSnapshot)) return;
       _lastSnapshot = state.snapshot;
       final ids = state.snapshot.drafts.map((r) => r.id).toSet();
@@ -30,6 +38,7 @@ class RequestExecutionViewModel extends ChangeNotifier {
   final WorkspaceRepository repository;
   final SendRequest sendRequest;
   late WorkspaceSnapshot _lastSnapshot;
+  late int _workspaceRevision;
   late final StreamSubscription<WorkspaceState> _subscription;
   final _responses = <String, ResponseRecord>{};
   RequestTask<HistoryRecord>? _task;
@@ -39,11 +48,14 @@ class RequestExecutionViewModel extends ChangeNotifier {
   bool _disposed = false;
   String? get runningId => _runningId;
   bool get running => _task != null;
+
   /// 获取指定草稿最近的实时或最终响应。
   ResponseRecord? responseFor(String id) => _responses[id];
+
   /// 仅为对应草稿返回当前发送校验错误。
   RequestValidation? validationFor(String id) =>
       _validationId == id ? _validation : null;
+
   /// 仅在执行模型未释放时通知界面刷新。
   void _notify() {
     if (!_disposed) notifyListeners();
@@ -83,6 +95,7 @@ class RequestExecutionViewModel extends ChangeNotifier {
 
   /// 请求取消当前传输，最终结果仍由原任务统一收尾。
   void cancel() => _task?.cancel();
+
   /// 取消当前任务与实时订阅，并等待最终结果及历史保存完成，供退出流程使用。
   Future<void> stop() async {
     _task?.cancel();

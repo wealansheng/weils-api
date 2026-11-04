@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:weils_api/core/errors/app_failure.dart';
 import 'package:weils_api/core/storage/atomic_json_file.dart';
+
 import '../../domain/entities/workspace_snapshot.dart';
 import '../models/workspace_json.dart';
 import 'workspace_data_source.dart';
@@ -24,6 +25,7 @@ class LocalWorkspaceSource implements WorkspaceDataSource {
   Future<void> _tail = Future.value();
   File get file =>
       File('${directory.path}${Platform.pathSeparator}workspace.json');
+
   /// 解析本地 JSON 并校验工作区版本与必要结构。
   Map<String, dynamic> _decode(String text) {
     final data = jsonDecode(text) as Map<String, dynamic>;
@@ -128,32 +130,73 @@ class LocalWorkspaceSource implements WorkspaceDataSource {
       }
       await destination.create(exclusive: true);
       var committed = false;
-      final pointerTemp = File(
-        '${locationFile.path}.tmp-${DateTime.now().microsecondsSinceEpoch}',
-      );
       try {
         await destination.writeAsString(encoded, flush: true);
-        await locationFile.parent.create(recursive: true);
-        await pointerTemp.writeAsString(
-          jsonEncode({'version': 1, 'dataDirectory': resolved}),
-          flush: true,
-        );
-        await pointerTemp.rename(locationFile.path);
-        _directory = Directory(resolved);
+        await _selectDirectory(resolved);
         committed = true;
       } finally {
         if (!committed && await destination.exists()) {
           await destination.delete();
         }
-        if (await pointerTemp.exists()) await pointerTemp.delete();
       }
     });
   }
 
-  /// 串行执行磁盘操作；前一次失败不会阻断后续保存或迁移。
-  Future<void> _enqueue(Future<void> Function() action) {
+  /// 完整校验已有工作区后再切换位置，读取失败时保留原目录和目标文件。
+  @override
+  Future<Map<String, dynamic>> openWorkspace(String path) => _enqueue(() async {
+    await _loadLocation();
+    final target = Directory(path);
+    if (!target.isAbsolute || !await target.exists()) {
+      throw const AppFailure(FailureCode.notFound);
+    }
+    final resolved = await target.resolveSymbolicLinks();
+    final destination = File(
+      '$resolved${Platform.pathSeparator}workspace.json',
+    );
+    late final Map<String, dynamic> data;
+    try {
+      data = _decode(await destination.readAsString());
+      // 结构正确并不代表所有实体都可读取，提交目录指针前验证全部内容。
+      WorkspaceJson.decode(data);
+    } on FormatException catch (e) {
+      throw AppFailure(FailureCode.invalidData, cause: e);
+    } on TypeError catch (e) {
+      throw AppFailure(FailureCode.invalidData, cause: e);
+    } on ArgumentError catch (e) {
+      throw AppFailure(FailureCode.invalidData, cause: e);
+    } on FileSystemException catch (e) {
+      throw AppFailure(FailureCode.read, cause: e);
+    }
+    await _selectDirectory(resolved);
+    recoveryNotice = null;
+    return data;
+  });
+
+  /// 原子更新启动目录指针；写入成功后才改变内存目录，失败时清理临时文件。
+  Future<void> _selectDirectory(String resolved) async {
+    final temporary = File(
+      '${locationFile.path}.tmp-${DateTime.now().microsecondsSinceEpoch}',
+    );
+    var committed = false;
+    try {
+      await locationFile.parent.create(recursive: true);
+      await temporary.writeAsString(
+        jsonEncode({'version': 1, 'dataDirectory': resolved}),
+        flush: true,
+      );
+      await temporary.rename(locationFile.path);
+      _directory = Directory(resolved);
+      committed = true;
+    } finally {
+      if (!committed && await temporary.exists()) await temporary.delete();
+    }
+  }
+
+  /// 串行执行磁盘操作并返回结果；前一次失败不会阻断后续保存或切换。
+  Future<T> _enqueue<T>(Future<T> Function() action) {
     final next = _tail.catchError((Object _) {}).then((_) => action());
-    _tail = next;
+    _tail = next.then<void>((_) {}, onError: (Object _, StackTrace _) {});
     return next;
   }
 }

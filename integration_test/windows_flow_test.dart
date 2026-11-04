@@ -8,6 +8,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:weils_api/features/workspace/data/data_sources/local_workspace_source.dart';
+import 'package:weils_api/features/workspace/data/models/workspace_json.dart';
 
 import '../test/support/workspace_fixture.dart';
 
@@ -234,12 +235,13 @@ void main() {
         final sourceFile = (c.storage as LocalWorkspaceSource).file;
         final originalData = await sourceFile.readAsString();
         final target = await Directory('${directory.path}/移动后的 数据').create();
+        var selectedDirectory = target.path;
         const windowChannel = MethodChannel('weils/window');
         tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
           windowChannel,
           (call) async {
             expect(call.method, 'selectDirectory');
-            return target.path;
+            return selectedDirectory;
           },
         );
         addTearDown(
@@ -280,6 +282,60 @@ void main() {
         } finally {
           relocated.dispose();
         }
+
+        // 已有工作区加载后立即刷新编辑器，且不会用当前数据覆盖目标文件。
+        final existing = await Directory('${directory.path}/已有工作区').create();
+        final loadedDraft = c.active!.copyWith(
+          name: '已加载工作区接口',
+          url: 'http://loaded.example',
+        );
+        final existingText = jsonEncode(
+          WorkspaceJson.encode(
+            c.snapshot.copyWith(
+              drafts: [loadedDraft],
+              activeId: loadedDraft.id,
+              timeoutSeconds: 63,
+              sseMaxResponseMb: 6,
+            ),
+          ),
+        );
+        final existingFile = File('${existing.path}/workspace.json');
+        await existingFile.writeAsString(existingText);
+        selectedDirectory = existing.path;
+        await tester.tap(find.text('设置'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const ValueKey('choose-data-directory')));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('保存设置'));
+        for (var i = 0; i < 100 && find.text('保存设置').evaluate().isNotEmpty; i++) {
+          await tester.pump(const Duration(milliseconds: 100));
+        }
+        expect(find.text('保存设置'), findsNothing);
+        expect(c.storage.directoryPath, await existing.resolveSymbolicLinks());
+        expect(c.active!.name, '已加载工作区接口');
+        expect(c.timeoutSeconds, 63);
+        expect(c.snapshot.sseMaxResponseMb, 6);
+        expect(
+          tester
+              .widget<TextField>(find.byKey(const ValueKey('request-url')))
+              .controller!
+              .text,
+          'http://loaded.example',
+        );
+        expect(await existingFile.readAsString(), existingText);
+        await capture('native-loaded-workspace');
+        final reopened = WorkspaceFixture(
+          storage: LocalWorkspaceSource(directory: directory),
+        );
+        try {
+          await reopened.initialize();
+          expect(reopened.storageBlocked, false);
+          expect(reopened.active!.name, '已加载工作区接口');
+          expect(reopened.timeoutSeconds, 63);
+        } finally {
+          reopened.dispose();
+        }
+
         expect(tester.takeException(), isNull);
         await tester.pumpWidget(const SizedBox.shrink());
         await tester.pumpAndSettle();

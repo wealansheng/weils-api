@@ -214,7 +214,7 @@ class _SettingsDialogState extends State<_SettingsDialog> {
                   ),
                   const SizedBox(height: 8),
                   const Text(
-                    '保存设置后，现有数据将复制到新目录，原目录保留。请选择未存放工作区数据的文件夹。',
+                    '保存设置后，空目录将接收当前数据；已有 workspace.json 时加载该工作区及其设置。当前草稿会先保存到原目录，原数据保留。切换前请停止请求和 Mock 服务。',
                     style: TextStyle(
                       fontSize: 12,
                       color: AppColors.muted,

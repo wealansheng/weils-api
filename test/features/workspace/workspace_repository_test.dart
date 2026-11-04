@@ -460,7 +460,7 @@ void main() {
         await c.updateSettings(timeout: 80, directoryPath: target.path),
         isFalse,
       );
-      expect(c.settingsError, contains('已有工作区'));
+      expect(c.settingsError, contains(suffix.isEmpty ? '数据无效' : '无法读取所选目录'));
       expect(c.timeoutSeconds, 30);
       expect(c.storage.directoryPath, directory.path);
       expect(await occupied.readAsString(), 'keep this exact content');

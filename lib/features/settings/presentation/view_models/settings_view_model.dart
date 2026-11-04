@@ -6,10 +6,16 @@ import 'package:weils_api/features/workspace/domain/repositories/workspace_repos
 import 'package:weils_api/features/workspace/domain/use_cases/update_workspace_settings.dart';
 
 class SettingsViewModel extends ChangeNotifier {
-  SettingsViewModel(this.repository, this.window, this.updateSettings);
+  SettingsViewModel(
+    this.repository,
+    this.window,
+    this.updateSettings, {
+    this.directoryChangeBlocked,
+  });
   final WorkspaceRepository repository;
   final DesktopWindow window;
   final UpdateWorkspaceSettings updateSettings;
+  final bool Function()? directoryChangeBlocked;
   bool _saving = false, _choosing = false, _pickerFailed = false;
   String? _selectedDirectory;
   AppFailure? _failure;
@@ -22,6 +28,7 @@ class SettingsViewModel extends ChangeNotifier {
   int get sseMaxResponseMb => repository.state.snapshot.sseMaxResponseMb;
   int get timeout => repository.state.snapshot.timeoutSeconds;
   String get directory => _selectedDirectory ?? repository.state.dataDirectory;
+
   /// 仅在视图模型未释放时通知设置界面刷新。
   void _notify() {
     if (!_disposed) notifyListeners();
@@ -48,6 +55,13 @@ class SettingsViewModel extends ChangeNotifier {
   /// 提交超时、SSE 上限和可选数据目录，记录保存结果并维护忙碌状态。
   Future<bool> save(int timeout, {int? sseMaxResponseMb}) async {
     if (busy) return false;
+    if (_selectedDirectory != null &&
+        _selectedDirectory != repository.state.dataDirectory &&
+        directoryChangeBlocked?.call() == true) {
+      _failure = const AppFailure(FailureCode.busy);
+      _notify();
+      return false;
+    }
     _saving = true;
     _failure = null;
     _pickerFailed = false;
@@ -66,6 +80,7 @@ class SettingsViewModel extends ChangeNotifier {
   /// 清空请求历史，并返回仓库持久化是否成功。
   Future<bool> clearHistory() async =>
       (await repository.clearHistory()).succeeded;
+
   /// 标记视图模型已释放，阻止未完成的异步操作继续通知界面。
   @override
   void dispose() {
