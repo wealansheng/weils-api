@@ -32,6 +32,8 @@ VS Code 已提供 `Weils API (Windows)` 启动配置，直接点击 `lib/main.da
 
 只允许合并本次 CI 验证的提交。运行期间 `dev` 有新提交时等待新一轮 CI；已经合入 `main` 的提交重跑不会重复创建 PR。合并冲突或分支保护要求未满足时，PR 保持开放，合并步骤报告失败。
 
+PR 查询和创建使用 GitHub REST API。创建响应异常时先确认远程是否已有 PR，存在则继续复用，避免“PR 已创建但 CI 报错”后重复提交；暂时性失败最多尝试三次，仍失败时保留 API 错误供排查。
+
 仓库需在 **Settings → Actions → General → Workflow permissions** 勾选 **Allow GitHub Actions to create and approve pull requests**，并在 **Settings → General → Pull Requests** 启用 **Allow merge commits**。工作流使用内置 `GITHUB_TOKEN`，仅合并任务拥有代码与 PR 写权限；无需额外配置 PAT，也不依赖仓库的 Allow auto-merge 开关。CI 由 `dev` 推送触发，检查通过后立即调用 PR 合并。
 
 ## 使用
