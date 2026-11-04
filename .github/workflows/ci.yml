@@ -116,6 +116,9 @@ jobs:
       - name: Run Windows SSE integration test
         run: flutter test integration_test/sse_windows_flow_test.dart -d windows --dart-define=REVIEW_DIR=build/review
 
+      - name: Run Windows cURL integration test
+        run: flutter test integration_test/curl_windows_flow_test.dart -d windows
+
       - name: Upload integration screenshots
         if: always()
         uses: actions/upload-artifact@v4
@@ -219,4 +222,4 @@ jobs:
           # 通过 GitHub 创建 merge commit，保留 dev 提交及分支。
           # 合并请求再次校验头提交，阻止创建 PR 之后发生的分支更新被带入 main。
           # 分支保护、必需审核或冲突会阻止合并，PR 保持开放供处理。
-          gh pr merge "$pr_url" --merge --match-head-commit "$VERIFIED_SHA"
+          gh pr merge "$pr_url" --squash --match-head-commit "$VERIFIED_SHA"

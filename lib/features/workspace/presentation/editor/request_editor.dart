@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import 'package:weils_api/core/theme/app_theme.dart';
 import 'package:weils_api/shared/widgets/section_tabs.dart';
@@ -13,6 +14,7 @@ import 'widgets/request_url_bar.dart';
 import 'widgets/request_body_editor.dart';
 import 'widgets/request_auth_editor.dart';
 import 'widgets/response_pane.dart';
+import '../../domain/use_cases/curl_codec.dart';
 
 class RequestEditor extends StatefulWidget {
   const RequestEditor({
@@ -24,6 +26,7 @@ class RequestEditor extends StatefulWidget {
   final RequestEditorViewModel viewModel;
   final RequestExecutionViewModel execution;
   final VoidCallback onSave;
+
   /// 创建请求编辑器的分区选择与输入焦点状态。
   @override
   State<RequestEditor> createState() => _RequestEditorState();
@@ -36,12 +39,36 @@ class _RequestEditorState extends State<RequestEditor> {
   double? _requestHeight;
   RequestEditorViewModel get c => widget.viewModel;
   RequestExecutionViewModel get execution => widget.execution;
+
   /// 释放请求名称和 URL 的文本输入控制器。
   @override
   void dispose() {
     _name.dispose();
     _url.dispose();
     super.dispose();
+  }
+
+  /// 复制当前请求的可执行 cURL，解析失败或剪贴板不可用时保留草稿并提示。
+  Future<void> _copyCurl(CurlShell shell) async {
+    String message;
+    try {
+      final command = CurlCodec.generate(
+        c.request,
+        userAgent: c.userAgent,
+        shell: shell,
+      );
+      await Clipboard.setData(ClipboardData(text: command));
+      message =
+          '已复制 cURL（${shell == CurlShell.bash ? 'Bash' : 'PowerShell 7'}）';
+    } on CurlFormatException catch (e) {
+      message = e.message;
+    } on PlatformException {
+      message = '无法写入剪贴板，请重试。';
+    }
+    if (mounted) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(message)));
+    }
   }
 
   /// 组合请求信息、参数编辑与响应面板，并连接草稿更新、发送和取消操作。
@@ -63,6 +90,7 @@ class _RequestEditorState extends State<RequestEditor> {
             onNameChanged: c.setName,
             onFolderChanged: c.setFolder,
             onSave: widget.onSave,
+            onExportCurl: _copyCurl,
           ),
           RequestUrlBar(
             request: r,
@@ -94,6 +122,7 @@ class _RequestEditorState extends State<RequestEditor> {
                 final height =
                     (_requestHeight ?? (_tab == 'Headers' ? 260.0 : 184.0))
                         .clamp(120.0, maximum);
+
                 /// 为参数或 Headers 创建共享条目表，按类型绑定增删改操作与默认请求头。
                 Widget table(EntryKind kind, List<Entry> entries) => EntryTable(
                   key: ValueKey('${r.id}-${kind.name}'),

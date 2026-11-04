@@ -187,7 +187,11 @@ void main() {
       expect(find.byType(MenuItemButton), findsNothing);
       await tester.tap(folder);
       await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const ValueKey('request-url')));
+      // 点击 URL 左侧，避开窄窗口中覆盖输入框右侧的模块菜单。
+      await tester.tapAt(
+        tester.getTopLeft(find.byKey(const ValueKey('request-url'))) +
+            const Offset(16, 16),
+      );
       await tester.pumpAndSettle();
       expect(find.byType(MenuItemButton), findsNothing);
       expect(tester.takeException(), isNull);
@@ -1124,7 +1128,10 @@ void main() {
       );
       await tester.tap(find.text('保存设置'));
       await tester.pumpAndSettle();
-      expect(find.text('所选目录的工作区无法加载，请检查 workspace.json 及备份文件。'), findsOneWidget);
+      expect(
+        find.text('所选目录的工作区无法加载，请检查 workspace.json 及备份文件。'),
+        findsOneWidget,
+      );
       expect(storage.relocations, 0);
       expect(c.timeoutSeconds, 30);
       await capture(tester, key, 'settings-directory-error');
