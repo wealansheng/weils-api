@@ -26,6 +26,14 @@ flutter build windows --release
 
 VS Code 已提供 `Weils API (Windows)` 启动配置，直接点击 `lib/main.dart` 上方的 Run / Debug 或按 F5，会自动准备目录并使用同一数据副本，无需先在终端运行脚本。
 
+## 远程 CI 与合并
+
+推送到 `dev` 后，GitHub Actions 先执行静态分析、单元与界面测试，再执行 Windows 集成测试（含 SSE）。全部通过后自动创建或复用本仓库的 `dev → main` PR，并通过 PR 生成合并提交，保留 `dev` 分支和原有提交历史。
+
+只允许合并本次 CI 验证的提交。运行期间 `dev` 有新提交时等待新一轮 CI；已经合入 `main` 的提交重跑不会重复创建 PR。合并冲突或分支保护要求未满足时，PR 保持开放，合并步骤报告失败。
+
+仓库需在 **Settings → Actions → General → Workflow permissions** 勾选 **Allow GitHub Actions to create and approve pull requests**，并在 **Settings → General → Pull Requests** 启用 **Allow merge commits**。工作流使用内置 `GITHUB_TOKEN`，仅合并任务拥有代码与 PR 写权限；无需额外配置 PAT，也不依赖仓库的 Allow auto-merge 开关。CI 由 `dev` 推送触发，检查通过后立即调用 PR 合并。
+
 ## 使用
 
 - 新建 HTTP 接口，编辑名称、所在文件夹、方法和 URL。侧栏加号也可新建文件夹，右键接口或文件夹可以重命名、删除。
