@@ -12,6 +12,7 @@ class ControlledGateway implements RequestGateway {
   RequestTask<ResponseRecord> start(
     RequestSpec request, {
     required Duration timeout,
+    int sseMaxResponseMb = 2,
   }) {
     sent = request;
     this.timeout = timeout;

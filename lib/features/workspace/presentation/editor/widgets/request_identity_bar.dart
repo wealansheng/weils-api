@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
-import '../../../../../core/theme/app_theme.dart';
-import '../../../domain/entities/workspace_entities.dart';
-import '../../../../../shared/widgets/anchored_select.dart';
+import 'package:weils_api/core/theme/app_theme.dart';
+import 'package:weils_api/features/workspace/domain/entities/workspace_entities.dart';
+import 'package:weils_api/shared/widgets/anchored_select.dart';
 
 class RequestIdentityBar extends StatelessWidget {
   const RequestIdentityBar({
@@ -22,6 +22,7 @@ class RequestIdentityBar extends StatelessWidget {
   final ValueChanged<String> onNameChanged, onFolderChanged;
   final VoidCallback onSave;
   RequestSpec get r => request;
+  /// 展示接口名称、所属目录和保存入口，并标记当前草稿的未保存状态。
   @override
   Widget build(BuildContext context) => Padding(
     padding: const EdgeInsets.fromLTRB(20, 12, 20, 10),

@@ -5,6 +5,7 @@ import '../../core/theme/app_theme.dart';
 class ApiMark extends StatelessWidget {
   const ApiMark({super.key, this.size = 26});
   final double size;
+  /// 使用主题样式绘制可复用的 API 标识。
   @override
   Widget build(BuildContext context) => Row(
     mainAxisSize: MainAxisSize.min,

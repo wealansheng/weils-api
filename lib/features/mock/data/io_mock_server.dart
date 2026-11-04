@@ -18,6 +18,7 @@ class IoMockServer implements MockServer {
   bool get running => _server != null;
   @override
   int? get port => _server?.port;
+  /// 在 IPv4 回环地址启动 Mock 服务；通过代次检查避免停止后仍完成旧的启动操作。
   @override
   Future<void> start(
     int port,
@@ -36,7 +37,7 @@ class IoMockServer implements MockServer {
       }
       _server = server;
       server.listen((request) {
-        // Capture the immutable saved definitions before any asynchronous work.
+        // 在异步处理前固定本次请求使用的已保存定义，避免中途保存影响当前匹配。
         final snapshot = List<MockDefinition>.of(definitions());
         unawaited(_handle(request, snapshot, generation));
       });
@@ -45,6 +46,7 @@ class IoMockServer implements MockServer {
     }
   }
 
+  /// 读取并限制请求正文，匹配路由与场景，生成响应并处理延迟、CORS 和客户端断开。
   Future<void> _handle(
     HttpRequest request,
     List<MockDefinition> definitions,
@@ -65,6 +67,7 @@ class IoMockServer implements MockServer {
       requestedHeaders ?? '*',
     );
     response.headers.set('Access-Control-Expose-Headers', '*');
+    /// 仅在当前服务代次仍有效时返回 JSON 错误，忽略客户端已断开导致的写入失败。
     void error(int status, String message) {
       if (generation != _generation) return;
       try {
@@ -72,7 +75,7 @@ class IoMockServer implements MockServer {
         response.headers.contentType = ContentType.json;
         response.write(jsonEncode({'message': message}));
       } on Object {
-        /* The client may already have disconnected. */
+        /* 客户端可能已经断开，忽略错误响应的写入失败。 */
       }
     }
 
@@ -157,22 +160,23 @@ class IoMockServer implements MockServer {
     } on MockValidationException catch (e) {
       error(500, e.message);
     } on Object catch (_) {
-      // A disconnected caller must never escape into Flutter's error zone.
+      // 客户端断开属于请求生命周期内的错误，不向 Flutter 错误区域继续抛出。
       try {
         error(500, 'Mock 请求处理失败');
       } on Object catch (_) {
-        /* closed response */
+        /* 响应可能已经关闭。 */
       }
     } finally {
       try {
         await response.close();
       } on Object catch (_) {
-        /* client disconnected */
+        /* 客户端可能已经断开。 */
       }
       _pending.remove(response);
     }
   }
 
+  /// 使旧请求失效，唤醒等待中的延迟响应并强制关闭服务连接。
   @override
   Future<void> stop() async {
     ++_generation;
@@ -187,6 +191,7 @@ class IoMockServer implements MockServer {
     _pending.clear();
   }
 
+  /// 标记服务已释放并异步停止，阻止后续重新启动。
   @override
   void dispose() {
     _disposed = true;

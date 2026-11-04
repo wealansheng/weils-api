@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+/// 打开名称输入弹窗并校验非空，返回去除首尾空白的结果；延迟释放输入控制器以等待关闭动画。
 Future<String?> askName(
   BuildContext context, {
   required String title,
@@ -50,12 +51,13 @@ Future<String?> askName(
       ],
     ),
   );
-  // Dialog route transitions may retain the field for a frame after pop.
+  // 弹窗关闭动画期间可能仍会访问输入框，等待动画结束后再释放控制器。
   await Future<void>.delayed(const Duration(milliseconds: 250));
   field.dispose();
   return result;
 }
 
+/// 展示需要确认的操作，关闭或取消弹窗时统一返回否定结果。
 Future<bool> confirmAction(
   BuildContext context, {
   required String title,

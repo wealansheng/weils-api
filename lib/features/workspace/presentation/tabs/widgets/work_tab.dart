@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../../../../core/theme/app_theme.dart';
+import 'package:weils_api/core/theme/app_theme.dart';
 
 class WorkTab extends StatelessWidget {
   const WorkTab({
@@ -16,6 +16,7 @@ class WorkTab extends StatelessWidget {
   final VoidCallback onTap;
   final Widget? trailing;
   final int? reorderIndex;
+  /// 构建支持选中、关闭和拖拽的请求标签页。
   @override
   Widget build(BuildContext context) => Padding(
     padding: const EdgeInsets.only(right: 3, top: 7),
@@ -50,6 +51,7 @@ class WorkTab extends StatelessWidget {
     ),
   );
 
+  /// 以固定最大宽度展示标签名称，使用省略号和选中颜色适配有限空间。
   Widget _label() => Padding(
     padding: EdgeInsets.only(left: 15, right: trailing == null ? 15 : 8),
     child: Align(

@@ -1,4 +1,4 @@
-import '../../../../core/utils/identity.dart';
+import 'package:weils_api/core/utils/identity.dart';
 
 class Entry {
   Entry({
@@ -10,6 +10,7 @@ class Entry {
   }) : id = id ?? newId();
   final String id, name, value, description;
   final bool enabled;
+  /// 保留条目标识并复制参数或 Header，未指定的字段沿用原值。
   Entry copyWith({
     String? name,
     String? value,

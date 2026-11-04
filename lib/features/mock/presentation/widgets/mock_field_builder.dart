@@ -2,7 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 
-import '../../../../shared/widgets/anchored_select.dart';
+import 'package:weils_api/shared/widgets/anchored_select.dart';
 import '../../domain/entities/mock_definition.dart';
 import '../../domain/use_cases/generate_mock.dart';
 import 'mock_input.dart';
@@ -13,11 +13,13 @@ class _Field {
   String name = '', type = 'constant', value = 'null', count = '5';
 }
 
+/// 打开字段表单，成功应用时返回生成的 JSON 模板，取消时返回空值。
 Future<String?> openMockFieldBuilder(BuildContext context) =>
     showDialog<String>(context: context, builder: (_) => const _FieldBuilder());
 
 class _FieldBuilder extends StatefulWidget {
   const _FieldBuilder();
+  /// 创建字段列表、字段类型与模板校验提示状态。
   @override
   State<_FieldBuilder> createState() => _FieldBuilderState();
 }
@@ -25,6 +27,7 @@ class _FieldBuilder extends StatefulWidget {
 class _FieldBuilderState extends State<_FieldBuilder> {
   final _fields = [_Field()];
   String? _error;
+  /// 将字段表单转换为 JSON 模板，校验字段唯一性与生成规则后返回结果。
   void _apply() {
     try {
       final template = <String, Object?>{};
@@ -50,7 +53,7 @@ class _FieldBuilderState extends State<_FieldBuilder> {
             if (count == null || count < 0 || count > 1000) {
               throw const MockValidationException('数组数量须在 0–1000 之间');
             }
-            // A range with equal endpoints preserves arrays even for count=1.
+            // 使用两端相等的范围规则，使数量为 1 时仍生成数组。
             template['$name|$count-$count'] = [jsonDecode(field.value)];
         }
       }
@@ -66,6 +69,7 @@ class _FieldBuilderState extends State<_FieldBuilder> {
     }
   }
 
+  /// 构建常量、随机值、对象及数组字段的模板编辑表单。
   @override
   Widget build(BuildContext context) => AlertDialog(
     title: const Text('字段表生成模板'),

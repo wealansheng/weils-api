@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../../../../core/theme/app_theme.dart';
-import '../../../../shared/widgets/input_dialogs.dart';
+import 'package:weils_api/core/theme/app_theme.dart';
+import 'package:weils_api/shared/widgets/input_dialogs.dart';
 import 'view_models/library_view_model.dart';
 
 class WorkspaceSidebar extends StatelessWidget {
@@ -18,6 +18,7 @@ class WorkspaceSidebar extends StatelessWidget {
   final TextEditingController searchController;
   final ValueChanged<String> onSearch;
   final Widget child;
+  /// 组合接口或历史侧栏的标题、搜索输入和功能列表。
   @override
   Widget build(BuildContext context) => DecoratedBox(
     decoration: const BoxDecoration(

@@ -14,6 +14,7 @@ class AppShell extends StatelessWidget {
   });
   final Widget header, rail, sidebar, body, footer;
   final Widget? notice;
+  /// 组合桌面页头、活动栏、侧栏、主内容、通知和页脚布局。
   @override
   Widget build(BuildContext context) => LayoutBuilder(
     builder: (context, constraints) {

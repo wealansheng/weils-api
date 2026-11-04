@@ -887,11 +887,17 @@ void main() {
     await show(tester, c, GlobalKey(), const Size(1280, 720));
     await tester.tap(find.text('设置'));
     await tester.pumpAndSettle();
-    await tester.enterText(find.byType(TextFormField), '0');
+    await tester.enterText(
+      find.byKey(const ValueKey('request-timeout-seconds')),
+      '0',
+    );
     await tester.tap(find.text('保存设置'));
     await tester.pumpAndSettle();
     expect(find.text('请填写 1–300 之间的整数'), findsOneWidget);
-    await tester.enterText(find.byType(TextFormField), '45');
+    await tester.enterText(
+      find.byKey(const ValueKey('request-timeout-seconds')),
+      '45',
+    );
     await tester.tap(find.text('保存设置'));
     await tester.runAsync(c.flush);
     await tester.pumpAndSettle();
@@ -991,7 +997,10 @@ void main() {
         );
         await tester.tap(find.byKey(const ValueKey('choose-data-directory')));
         await tester.pumpAndSettle();
-        await tester.enterText(find.byType(TextFormField), '45');
+        await tester.enterText(
+          find.byKey(const ValueKey('request-timeout-seconds')),
+          '45',
+        );
         await tester.tap(find.text('保存设置'));
         await tester.pumpAndSettle();
         expect(find.text('保存设置'), findsNothing);
@@ -1037,7 +1046,10 @@ void main() {
       pickerFails = false;
       await tester.tap(find.byKey(const ValueKey('choose-data-directory')));
       await tester.pumpAndSettle();
-      await tester.enterText(find.byType(TextFormField), '70');
+      await tester.enterText(
+        find.byKey(const ValueKey('request-timeout-seconds')),
+        '70',
+      );
       await tester.tap(find.text('保存设置'));
       await tester.pumpAndSettle();
       expect(find.text('所选目录已有工作区数据，请选择其他文件夹。'), findsOneWidget);

@@ -10,7 +10,7 @@ class SelectOption {
   final Color? color;
 }
 
-/// Opens below a stable trigger instead of aligning the selected menu row.
+/// 将菜单固定在触发按钮下方，避免选中项改变时菜单位置跳动。
 class AnchoredSelect extends StatefulWidget {
   const AnchoredSelect({
     super.key,
@@ -23,14 +23,16 @@ class AnchoredSelect extends StatefulWidget {
     this.menuWidth = 180,
     this.height = 32,
     this.monospace = false,
+    this.enabled = true,
   });
 
   final String id, label, value;
   final List<SelectOption> options;
   final ValueChanged<String> onChanged;
   final double width, menuWidth, height;
-  final bool monospace;
+  final bool monospace, enabled;
 
+  /// 创建下拉菜单的展开控制器与键盘焦点状态。
   @override
   State<AnchoredSelect> createState() => _AnchoredSelectState();
 }
@@ -39,12 +41,14 @@ class _AnchoredSelectState extends State<AnchoredSelect> {
   final _controller = MenuController();
   final _focusNode = FocusNode();
 
+  /// 释放下拉触发按钮持有的焦点节点。
   @override
   void dispose() {
     _focusNode.dispose();
     super.dispose();
   }
 
+  /// 在触发按钮下方构建选项菜单，统一选中、禁用和键盘焦点状态。
   @override
   Widget build(BuildContext context) {
     final selected = widget.options
@@ -84,7 +88,9 @@ class _AnchoredSelectState extends State<AnchoredSelect> {
             selected: option.value == widget.value,
             child: MenuItemButton(
               key: ValueKey('${widget.id}-option-${option.value}'),
-              onPressed: () => widget.onChanged(option.value),
+              onPressed: widget.enabled
+                  ? () => widget.onChanged(option.value)
+                  : null,
               overflowAxis: Axis.vertical,
               style: ButtonStyle(
                 minimumSize: const WidgetStatePropertyAll(Size(0, 34)),
@@ -139,7 +145,7 @@ class _AnchoredSelectState extends State<AnchoredSelect> {
           child: TextButton(
             key: ValueKey('${widget.id}-trigger'),
             focusNode: _focusNode,
-            onPressed: widget.options.isEmpty
+            onPressed: !widget.enabled || widget.options.isEmpty
                 ? null
                 : () => controller.isOpen
                       ? controller.close()

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../../../shared/widgets/empty_message.dart';
+import 'package:weils_api/shared/widgets/empty_message.dart';
 import '../../domain/entities/history_record.dart';
 import 'history_detail.dart';
 import 'view_models/history_view_model.dart';
@@ -15,6 +15,7 @@ class HistoryWorkspace extends StatelessWidget {
   final HistoryViewModel viewModel;
   final ValueChanged<HistoryRecord> onReplay;
   final VoidCallback onLeave;
+  /// 显示选中历史的详情，提供重发与返回接口管理入口。
   @override
   Widget build(BuildContext context) => ListenableBuilder(
     listenable: viewModel,

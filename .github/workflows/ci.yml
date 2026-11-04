@@ -114,6 +114,9 @@ jobs:
       - name: Run Windows integration test
         run: flutter test integration_test/windows_flow_test.dart -d windows --dart-define=REVIEW_DIR=build/review
 
+      - name: Run Windows SSE integration test
+        run: flutter test integration_test/sse_windows_flow_test.dart -d windows --dart-define=REVIEW_DIR=build/review
+
       - name: Upload integration screenshots
         if: always()
         uses: actions/upload-artifact@v4

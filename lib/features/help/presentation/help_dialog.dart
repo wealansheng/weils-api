@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 
-import '../../../core/theme/app_theme.dart';
+import 'package:weils_api/core/theme/app_theme.dart';
 
+/// 打开内置使用说明，介绍接口请求、SSE、历史与 Mock 等功能。
 Future<void> openHelp(BuildContext context) => showDialog<void>(
   context: context,
   builder: (context) => AlertDialog(
@@ -30,7 +31,11 @@ Future<void> openHelp(BuildContext context) => showDialog<void>(
           ),
           _HelpItem(
             '查看响应',
-            'Ctrl + Enter 发送当前请求，再次操作可取消。下方显示真实状态码、耗时、大小、正文和响应头。JSON 可格式化，非 JSON 保留原文。响应捕获上限为 2 MB，超出时明确提示截断。',
+            'Ctrl + Enter 发送当前请求，再次操作可取消。下方显示真实状态码、耗时、大小、正文和响应头。JSON 可格式化，非 JSON 保留原文。普通 HTTP 响应捕获上限为 2 MB，超出时明确提示截断。',
+          ),
+          _HelpItem(
+            'SSE 流式接口',
+            '在请求地址前将 HTTP 切换为 SSE，再选择实际 HTTP 方法并发送，支持 POST JSON、参数和 Bearer Token。默认补充 Accept: text/event-stream，自定义同名 Header 可覆盖。响应提供事件、拼接 data、原文和 Headers，可复制当前视图。连接建立后持续接收，点击停止或按 Ctrl + Enter 结束，已收内容保留到历史，断线不自动重连。设置中可调整捕获上限（默认 2 MB，范围 1–50 MB），达到后自动停止；请求超时仅限制收到响应头前的等待。拼接 data 不提取模型 JSON 字段，[DONE] 按普通数据展示。',
           ),
           _HelpItem(
             '从历史继续调试',
@@ -63,6 +68,7 @@ Future<void> openHelp(BuildContext context) => showDialog<void>(
 class _HelpItem extends StatelessWidget {
   const _HelpItem(this.title, this.text);
   final String title, text;
+  /// 展示一条帮助主题及对应操作说明。
   @override
   Widget build(BuildContext context) => Padding(
     padding: const EdgeInsets.only(bottom: 22),

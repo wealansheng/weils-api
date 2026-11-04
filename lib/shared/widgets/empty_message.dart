@@ -14,6 +14,7 @@ class EmptyMessage extends StatelessWidget {
   final String title;
   final String? subtitle;
   final Widget? action;
+  /// 展示统一的空状态图标、标题、说明与可选操作入口。
   @override
   Widget build(BuildContext context) => Center(
     child: SingleChildScrollView(

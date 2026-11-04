@@ -9,7 +9,7 @@ import '../../features/mock/data/io_mock_server.dart';
 import '../../features/mock/domain/repositories/mock_server.dart';
 import '../../features/mock/presentation/view_models/mock_view_model.dart';
 
-/// Injectable composition boundary; tests never need the user's data directory.
+/// 可注入的应用依赖边界，使测试能够使用独立存储而无需访问用户数据目录。
 class AppDependencies {
   AppDependencies({
     required this.workspace,
@@ -35,6 +35,7 @@ class AppDependencies {
   late final MockServer mockServer;
   late final MockViewModel mocking;
   bool _disposed = false;
+  /// 按依赖关系释放请求、Mock、窗口和仓库资源；重复调用不会再次释放。
   void dispose() {
     if (_disposed) return;
     _disposed = true;

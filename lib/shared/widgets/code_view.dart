@@ -6,12 +6,14 @@ class CodeView extends StatefulWidget {
   const CodeView({super.key, required this.text, this.syntax = false});
   final String text;
   final bool syntax;
+  /// 创建代码预览的横向与纵向滚动状态。
   @override
   State<CodeView> createState() => _CodeViewState();
 }
 
 class _CodeViewState extends State<CodeView> {
   final _vertical = ScrollController(), _horizontal = ScrollController();
+  /// 释放代码预览的两个方向滚动控制器。
   @override
   void dispose() {
     _vertical.dispose();
@@ -19,6 +21,7 @@ class _CodeViewState extends State<CodeView> {
     super.dispose();
   }
 
+  /// 按 JSON 键、字符串和字面量生成高亮片段，保留未匹配的原文。
   List<TextSpan> _spans(String text) {
     if (!widget.syntax) return [TextSpan(text: text)];
     final pattern = RegExp(
@@ -47,6 +50,7 @@ class _CodeViewState extends State<CodeView> {
     return spans;
   }
 
+  /// 构建可选择的双向滚动代码预览，限制单次渲染字符量以控制界面开销。
   @override
   Widget build(BuildContext context) {
     final text = widget.text.length > 200000

@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 
-import '../../../../../core/theme/app_theme.dart';
-import '../../../../../core/utils/json_format.dart';
-import '../../../domain/entities/request_spec.dart';
-import '../../../../../shared/widgets/anchored_select.dart';
-import '../../../../../shared/widgets/tab_indentation.dart';
+import 'package:weils_api/core/theme/app_theme.dart';
+import 'package:weils_api/core/utils/json_format.dart';
+import 'package:weils_api/features/workspace/domain/entities/request_spec.dart';
+import 'package:weils_api/shared/widgets/anchored_select.dart';
+import 'package:weils_api/shared/widgets/tab_indentation.dart';
 
 class RequestBodyEditor extends StatefulWidget {
   const RequestBodyEditor({
@@ -15,6 +15,7 @@ class RequestBodyEditor extends StatefulWidget {
   });
   final RequestSpec request;
   final ValueChanged<String> onChanged, onTypeChanged;
+  /// 创建正文编辑所需的文本输入状态。
   @override
   State<RequestBodyEditor> createState() => _RequestBodyEditorState();
 }
@@ -24,12 +25,14 @@ class _RequestBodyEditorState extends State<RequestBodyEditor> {
     text: widget.request.body,
   );
   RequestSpec get r => widget.request;
+  /// 释放正文编辑区域的文本输入控制器。
   @override
   void dispose() {
     _body.dispose();
     super.dispose();
   }
 
+  /// 展示正文类型与文本编辑器，复用 Tab 两空格缩进并支持 JSON 格式化。
   @override
   Widget build(BuildContext context) => Column(
     children: [

@@ -18,6 +18,7 @@ class ActivityRail extends StatelessWidget {
   final List<RailDestination> destinations;
   final int selectedIndex;
   final ValueChanged<int> onSelect;
+  /// 按导航配置构建活动栏，并标记当前选中的功能入口。
   @override
   Widget build(BuildContext context) => Container(
     width: 76,
@@ -53,6 +54,7 @@ class _RailItem extends StatelessWidget {
   final String label;
   final bool selected;
   final VoidCallback onTap;
+  /// 绘制带提示和选中态的单个导航按钮。
   @override
   Widget build(BuildContext context) => Material(
     color: selected ? AppColors.selection : Colors.transparent,

@@ -1,16 +1,18 @@
 import 'dart:async';
 import 'dart:convert';
 
-import '../../../../core/errors/app_failure.dart';
-import '../../../../core/utils/identity.dart';
+import 'package:weils_api/core/errors/app_failure.dart';
+import 'package:weils_api/core/utils/identity.dart';
+
 import '../../domain/entities/workspace_entities.dart';
 import '../../domain/repositories/workspace_repository.dart';
 import '../data_sources/workspace_data_source.dart';
 import '../models/workspace_json.dart';
-import '../../../mock/domain/entities/mock_definition.dart';
-import '../../../mock/domain/use_cases/generate_mock.dart';
 
-/// Owns the only mutable reference to the immutable workspace snapshot.
+import 'package:weils_api/features/mock/domain/entities/mock_definition.dart';
+import 'package:weils_api/features/mock/domain/use_cases/generate_mock.dart';
+
+/// 统一持有和替换不可变工作区快照，作为工作区状态的唯一写入入口。
 class LocalWorkspaceRepository implements WorkspaceRepository {
   LocalWorkspaceRepository(this.source)
     : _state = WorkspaceState(
@@ -29,11 +31,13 @@ class LocalWorkspaceRepository implements WorkspaceRepository {
   Future<Outcome<void>>? _settingsChange;
   Future<Outcome<void>>? _mockChange;
   bool _disposed = false;
+  /// 替换当前状态，并在仓库未释放时同步通知订阅者。
   void _emit(WorkspaceState next) {
     _state = next;
     if (!_disposed) _changes.add(next);
   }
 
+  /// 更新工作区快照，默认使用 400 毫秒防抖合并自动保存。
   void _change(WorkspaceSnapshot snapshot, {bool persist = true}) {
     _emit(state.copyWith(snapshot: snapshot));
     if (!persist || _disposed) return;
@@ -44,12 +48,14 @@ class LocalWorkspaceRepository implements WorkspaceRepository {
     );
   }
 
+  /// 写入恢复成功后清除保存失败提示，其他提示保持不变。
   void _clearSaveFailure() {
     if (state.notice == WorkspaceNotice.saveFailed) {
       _emit(state.copyWith(notice: null));
     }
   }
 
+  /// 加载或恢复本地工作区；读取失败时进入禁止写入状态，保护原数据。
   @override
   Future<void> initialize() async {
     try {
@@ -73,6 +79,8 @@ class LocalWorkspaceRepository implements WorkspaceRepository {
     }
   }
 
+  /// 等待设置和 Mock 提交完成后落盘，失败时返回结果并保留内存编辑。
+  /// 退出时可只从待写快照排除未保存草稿，不修改用户仍在编辑的内容。
   @override
   Future<Outcome<void>> flush({bool discardDirtyDrafts = false}) async {
     _saveTimer?.cancel();
@@ -113,39 +121,55 @@ class LocalWorkspaceRepository implements WorkspaceRepository {
     }
   }
 
+  /// 复用正在执行的设置保存任务，避免同时提交多个设置事务。
   @override
   Future<Outcome<void>> updateSettings({
     required int timeout,
+    int? sseMaxResponseMb,
     String? directoryPath,
   }) {
     if (_settingsChange != null) return _settingsChange!;
-    final operation = _updateSettings(timeout, directoryPath);
+    final operation = _updateSettings(timeout, directoryPath, sseMaxResponseMb);
     _settingsChange = operation;
     return operation.whenComplete(() => _settingsChange = null);
   }
 
-  Future<Outcome<void>> _updateSettings(int timeout, String? path) async {
+  /// 校验并写入设置或迁移目录，成功后合并磁盘操作期间发生的编辑与请求结果。
+  Future<Outcome<void>> _updateSettings(
+    int timeout,
+    String? path,
+    int? sseMaxResponseMb,
+  ) async {
     _saveTimer?.cancel();
     await _mockChange;
     if (state.storageBlocked) {
       return const Outcome.failure(AppFailure(FailureCode.read));
     }
-    if (timeout < 1 || timeout > 300) {
+    if (timeout < 1 ||
+        timeout > 300 ||
+        (sseMaxResponseMb != null &&
+            (sseMaxResponseMb < 1 || sseMaxResponseMb > 50))) {
       return const Outcome.failure(AppFailure(FailureCode.invalidData));
     }
     try {
       final data = WorkspaceJson.encode(
-        _snapshot.copyWith(timeoutSeconds: timeout),
+        _snapshot.copyWith(
+          timeoutSeconds: timeout,
+          sseMaxResponseMb: sseMaxResponseMb,
+        ),
       );
       if (path == null) {
         await source.write(data);
       } else {
         await source.relocate(path, data);
       }
-      // Incorporate edits/request completions that occurred during disk IO.
+      // 合并磁盘操作期间产生的编辑和请求结果，避免用旧快照覆盖新状态。
       _emit(
         state.copyWith(
-          snapshot: _snapshot.copyWith(timeoutSeconds: timeout),
+          snapshot: _snapshot.copyWith(
+            timeoutSeconds: timeout,
+            sseMaxResponseMb: sseMaxResponseMb,
+          ),
           dataDirectory: source.directoryPath,
         ),
       );
@@ -158,6 +182,7 @@ class LocalWorkspaceRepository implements WorkspaceRepository {
     }
   }
 
+  /// 在指定目录或默认目录新建草稿，并将其设为当前标签页。
   @override
   RequestSpec newRequest({String? folderId}) {
     final draft = RequestSpec(folderId: folderId ?? _snapshot.folders.first.id);
@@ -170,6 +195,7 @@ class LocalWorkspaceRepository implements WorkspaceRepository {
     return draft;
   }
 
+  /// 打开并选中请求；相同标识的草稿已打开时不重复添加。
   @override
   void openRequest(RequestSpec request) => _change(
     _snapshot.copyWith(
@@ -179,6 +205,7 @@ class LocalWorkspaceRepository implements WorkspaceRepository {
       activeId: request.id,
     ),
   );
+  /// 按标识替换草稿，禁止编辑改变实体标识，内容未变化时不触发保存。
   @override
   void updateDraft(String id, RequestSpec Function(RequestSpec) update) {
     final current = _snapshot.draft(id);
@@ -195,8 +222,10 @@ class LocalWorkspaceRepository implements WorkspaceRepository {
     );
   }
 
+  /// 切换当前标签页，并将选中状态纳入自动保存。
   @override
   void selectTab(String? id) => _change(_snapshot.copyWith(activeId: id));
+  /// 将草稿移动到有效目标位置，忽略无效来源与未变化的顺序。
   @override
   void reorderDraft(int oldIndex, int newIndex) {
     if (oldIndex < 0 || oldIndex >= _snapshot.drafts.length) return;
@@ -207,6 +236,7 @@ class LocalWorkspaceRepository implements WorkspaceRepository {
     _change(_snapshot.copyWith(drafts: drafts));
   }
 
+  /// 将草稿提交为已保存接口并立即落盘，失败时回滚已保存版本且保留草稿。
   @override
   Future<Outcome<void>> saveDraft(String id) async {
     final current = _snapshot.draft(id);
@@ -241,6 +271,7 @@ class LocalWorkspaceRepository implements WorkspaceRepository {
     return result;
   }
 
+  /// 移除草稿；关闭当前标签页时选中相邻标签页，并安排持久化。
   @override
   void closeDraft(String id) {
     final index = _snapshot.drafts.indexWhere((r) => r.id == id);
@@ -257,6 +288,7 @@ class LocalWorkspaceRepository implements WorkspaceRepository {
     );
   }
 
+  /// 创建带有新标识的接口目录，并安排持久化。
   @override
   Folder addFolder(String name) {
     final folder = Folder(newId(), name);
@@ -264,6 +296,7 @@ class LocalWorkspaceRepository implements WorkspaceRepository {
     return folder;
   }
 
+  /// 按标识修改目录名称，保留其余目录及请求关联。
   @override
   void renameFolder(String id, String name) => _change(
     _snapshot.copyWith(
@@ -273,6 +306,7 @@ class LocalWorkspaceRepository implements WorkspaceRepository {
       ],
     ),
   );
+  /// 同步修改已保存接口与同标识草稿的名称。
   @override
   void renameRequest(String id, String name) => _change(
     _snapshot.copyWith(
@@ -286,6 +320,7 @@ class LocalWorkspaceRepository implements WorkspaceRepository {
       ],
     ),
   );
+  /// 删除已保存接口，并关闭对应草稿标签页。
   @override
   void deleteRequest(String id) {
     _change(
@@ -297,6 +332,7 @@ class LocalWorkspaceRepository implements WorkspaceRepository {
     closeDraft(id);
   }
 
+  /// 删除目录及关联的接口与草稿；没有剩余目录时恢复默认目录。
   @override
   void deleteFolder(String id) {
     final ids = {
@@ -314,9 +350,11 @@ class LocalWorkspaceRepository implements WorkspaceRepository {
     );
   }
 
+  /// 将请求结束记录放到历史列表首位，并安排持久化。
   @override
   void appendHistory(HistoryRecord record) =>
       _change(_snapshot.copyWith(history: [record, ..._snapshot.history]));
+  /// 清空历史并立即保存；失败时恢复旧记录，同时保留期间新增的历史。
   @override
   Future<Outcome<void>> clearHistory() async {
     final old = _snapshot.history;
@@ -331,9 +369,11 @@ class LocalWorkspaceRepository implements WorkspaceRepository {
     return result;
   }
 
+  /// 清除当前工作区提示，不修改工作区内容。
   @override
   void dismissNotice() => _emit(state.copyWith(notice: null));
 
+  /// 创建带独立默认路径的 Mock 草稿，并设为当前编辑项。
   @override
   MockDefinition newMock() {
     final draft = MockDefinition(path: '/mock-${newId().substring(0, 8)}');
@@ -346,6 +386,7 @@ class LocalWorkspaceRepository implements WorkspaceRepository {
     return draft;
   }
 
+  /// 选中 Mock；尚未打开时从已保存定义创建编辑草稿。
   @override
   void selectMock(String id) {
     final saved = _snapshot.mocks.where((d) => d.id == id).firstOrNull;
@@ -359,6 +400,7 @@ class LocalWorkspaceRepository implements WorkspaceRepository {
     );
   }
 
+  /// 编辑指定 Mock 草稿，禁止修改标识，忽略未变化的结果。
   @override
   void updateMockDraft(
     String id,
@@ -378,8 +420,8 @@ class LocalWorkspaceRepository implements WorkspaceRepository {
     );
   }
 
-  /// Serialize commits and publish saved definitions only after disk success.
-  /// Ordinary flushes wait for this transaction before taking their snapshot.
+  /// 串行执行 Mock 提交，并等待已有设置事务；只有磁盘写入成功才发布已保存定义。
+  /// 普通保存会等待此事务，避免旧快照覆盖已提交的 Mock。
   Future<Outcome<void>> _commitMock(
     Future<Outcome<void>> Function() operation,
   ) {
@@ -411,6 +453,7 @@ class LocalWorkspaceRepository implements WorkspaceRepository {
     return task;
   }
 
+  /// 校验路由、场景和响应模板，落盘成功后才更新服务可见的已保存定义。
   @override
   Future<Outcome<void>> saveMock(String id) => _commitMock(() async {
     final draft = _snapshot.mockDrafts.where((d) => d.id == id).firstOrNull;
@@ -435,8 +478,10 @@ class LocalWorkspaceRepository implements WorkspaceRepository {
     return const Outcome.success();
   });
 
+  /// 在串行事务中删除 Mock，写入成功后同步移除草稿与选中状态。
   @override
   Future<Outcome<void>> deleteMock(String id) => _commitMock(() async {
+    /// 从给定快照移除目标 Mock 及其草稿，保留其他并发修改。
     WorkspaceSnapshot remove(WorkspaceSnapshot s) => s.copyWith(
       mocks: s.mocks.where((d) => d.id != id).toList(),
       mockDrafts: s.mockDrafts.where((d) => d.id != id).toList(),
@@ -447,6 +492,7 @@ class LocalWorkspaceRepository implements WorkspaceRepository {
     return const Outcome.success();
   });
 
+  /// 校验并保存 Mock 端口，成功后再更新内存设置。
   @override
   Future<Outcome<void>> setMockPort(int port) => _commitMock(() async {
     if (port < 1 || port > 65535) {
@@ -458,6 +504,7 @@ class LocalWorkspaceRepository implements WorkspaceRepository {
     _change(_snapshot.copyWith(mockPort: port), persist: false);
     return const Outcome.success();
   });
+  /// 停止自动保存并关闭状态流，阻止释放后继续发布状态。
   @override
   void dispose() {
     _disposed = true;

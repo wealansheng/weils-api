@@ -1,6 +1,7 @@
-import '../../../../core/errors/app_failure.dart';
+import 'package:weils_api/core/errors/app_failure.dart';
 import '../../domain/entities/workspace_entities.dart';
 
+/// 将工作区恢复、读取和保存状态转换为用户提示。
 String? workspaceNoticeMessage(WorkspaceNotice? notice) => switch (notice) {
   null => null,
   WorkspaceNotice.recoveredBackup => '数据文件无法读取，已恢复上一次备份。原文件已保留在数据目录。',
@@ -8,6 +9,7 @@ String? workspaceNoticeMessage(WorkspaceNotice? notice) => switch (notice) {
   WorkspaceNotice.loadFailed => '无法读取本地数据，为避免覆盖原文件，已暂停保存。请检查数据目录的文件与访问权限，然后重启。',
   WorkspaceNotice.saveFailed => '本地保存失败，编辑内容仍在内存中。请检查磁盘空间和数据目录权限，再尝试保存。',
 };
+/// 将发送前的请求校验结果转换为对应中文说明。
 String? validationMessage(RequestValidation? validation) =>
     switch (validation) {
       null => null,
@@ -18,6 +20,7 @@ String? validationMessage(RequestValidation? validation) =>
       RequestValidation.invalidHeader => 'Header 名称或值包含无效字符，请检查 Headers。',
       RequestValidation.invalidToken => 'Bearer Token 不能包含换行。',
     };
+/// 将网络失败类型与超时参数转换为响应界面提示。
 String networkFailureMessage(AppFailure failure) => switch (failure.code) {
   FailureCode.timeout => '请求超时（${failure.seconds} 秒），请检查服务或调整超时设置。',
   FailureCode.tls => 'TLS 连接失败，请检查服务证书。',
@@ -34,6 +37,7 @@ extension ResponsePresentation on ResponseRecord {
       : statusCode == null
       ? '请求失败'
       : '$statusCode $reason'.trim();
+  /// 按 B、KB 或 MB 格式化响应接收大小，统一展示精度。
   String get sizeLabel => byteCount < 1024
       ? '$byteCount B'
       : byteCount < 1024 * 1024

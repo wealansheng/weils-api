@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 
-import '../../../core/theme/app_theme.dart';
-import '../../../shared/widgets/input_dialogs.dart';
+import 'package:weils_api/core/theme/app_theme.dart';
+import 'package:weils_api/shared/widgets/input_dialogs.dart';
 import 'view_models/mock_view_model.dart';
 
 class MockSidebar extends StatelessWidget {
   const MockSidebar({super.key, required this.viewModel});
   final MockViewModel viewModel;
+  /// 展示可搜索的 Mock 列表、启用状态与新建入口。
   @override
   Widget build(BuildContext context) => ListenableBuilder(
     listenable: viewModel,

@@ -5,6 +5,7 @@ import '../core/theme/app_theme.dart';
 class DesktopFooter extends StatelessWidget {
   const DesktopFooter({super.key, required this.onHelp});
   final VoidCallback onHelp;
+  /// 展示桌面应用底部状态与帮助入口。
   @override
   Widget build(BuildContext context) => Container(
     height: 33,

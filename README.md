@@ -42,6 +42,16 @@ VS Code 已提供 `Weils API (Windows)` 启动配置，直接点击 `lib/main.da
 - 历史保留当时的请求和响应，包括失败、超时和取消；编辑并重发创建独立草稿，不改写旧记录。
 - 设置中可调整超时（默认 30 秒）、清空历史，并通过 Windows 目录选择器更改数据保存目录；帮助文档内置在应用中。
 
+## SSE 流式请求
+
+在请求地址前的模式菜单中选择 **SSE**，再选择实际的 HTTP 方法并发送。支持 GET、POST 等现有方法，复用 Params、Headers、JSON/文本 Body 和 Bearer Token。默认添加 `Accept: text/event-stream`，启用的同名自定义 Header 可以覆盖它。
+
+响应区实时提供 **事件、拼接 data、原文、Headers** 四种视图，可复制当前视图。事件展示序号、event、id 和 data；拼接视图直接连接各事件的 data，不插入分隔符、不提取模型 JSON 字段。多行 data 保留换行，`[DONE]` 作为普通数据，不自动结束连接。服务器须返回 HTTP 200 和 `Content-Type: text/event-stream`；否则展示实际响应正文和 Headers，便于检查错误信息。
+
+连接建立后持续接收，点击“停止”或按 `Ctrl + Enter` 结束；切换页面不会断开连接，关闭该标签页前须先停止。结束、停止或网络异常后，已收到的内容保留，并生成一条可回看的历史快照；从历史“编辑并重发”保留 SSE 模式。连接断开后需要手动重发，不自动重连或发送 `Last-Event-ID`。
+
+请求超时设置仅限制 SSE 发送至收到响应头的时间，不限制已建立连接的总时长或空闲时间。“设置 → SSE 捕获上限”默认为 **2 MB**，可填写 **1–50 MB** 的整数；达到上限后停止并保留已捕获内容，末尾未完成的事件仅保留原文。修改上限只影响下次发送，普通 HTTP 仍使用 2 MB 上限。事件列表跟随底部追加，向上滚动阅读时暂停跟随；长文本仅预览最近 200,000 个字符，复制可取得完整捕获内容。
+
 ## 本地 Mock
 
 在“Mock 管理”中新建接口，填写 GET / POST / PUT / DELETE 与路径（如 `/users/:id`），编辑响应后保存。服务只使用已保存且启用的定义；草稿自动保留，保存失败继续使用旧定义。点击“启动服务”后可通过 `http://127.0.0.1:3000` 调用，端口可调整，重启应用不会自动启动服务。服务仅供本机访问，自动提供 CORS 与 OPTIONS 预检；入站请求不写入“请求历史”。
@@ -79,7 +89,7 @@ VS Code 已提供 `Weils API (Windows)` 启动配置，直接点击 `lib/main.da
 
 开发时可通过环境变量 `WEILS_API_DATA_DIR` 指定独立的初始数据与位置配置目录，该目录中的 `settings.json` 可指向设置中选择的新位置。正常启动是空工作区，不预置演示接口。
 
-响应捕获上限为 2 MB，超出会明确提示截断。长响应的 UI 预览上限为 200,000 字符，复制仍获取完整的已捕获正文。历史不会自动清理，可在设置中手动清空。当前首版不包含表单上传、Basic Auth、账号、团队协作或云同步。
+普通 HTTP 响应捕获上限为 2 MB，SSE 使用设置中的捕获上限，超出会明确提示截断。长响应的 UI 预览上限为 200,000 字符，复制仍获取完整的已捕获正文。历史不会自动清理，可在设置中手动清空。当前首版不包含表单上传、Basic Auth、账号、团队协作或云同步。
 
 ## 验证
 
@@ -88,6 +98,7 @@ flutter analyze
 flutter test
 flutter test integration_test/windows_flow_test.dart -d windows
 flutter test integration_test/mock_windows_flow_test.dart -d windows
+flutter test integration_test/sse_windows_flow_test.dart -d windows
 ```
 
 核心测试通过本地 HTTP 服务验证真实请求、编码、认证、超时、取消、响应截断、持久化、草稿恢复和历史隔离。界面测试覆盖 1440×800 / 1280×720、关闭保护、设置及帮助。Windows 集成测试使用临时数据目录验证实际桌面应用的完整流程。

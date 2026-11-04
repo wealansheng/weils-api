@@ -6,6 +6,7 @@ import '../shared/widgets/api_mark.dart';
 class DesktopHeader extends StatelessWidget {
   const DesktopHeader({super.key, required this.onSettings});
   final VoidCallback onSettings;
+  /// 展示应用标识、标题与全局设置入口。
   @override
   Widget build(BuildContext context) => Container(
     height: 52,

@@ -12,6 +12,7 @@ import 'core/theme/app_theme.dart';
 class WeilsApp extends StatefulWidget {
   const WeilsApp({super.key, this.dependencies});
   final AppDependencies? dependencies;
+  /// 创建应用依赖的初始化与释放状态。
   @override
   State<WeilsApp> createState() => _WeilsAppState();
 }
@@ -19,6 +20,7 @@ class WeilsApp extends StatefulWidget {
 class _WeilsAppState extends State<WeilsApp> {
   late final _dependencies =
       widget.dependencies ?? createProductionDependencies();
+  /// 在工作区尚未就绪时启动异步加载，避免重复初始化注入的依赖。
   @override
   void initState() {
     super.initState();
@@ -27,12 +29,14 @@ class _WeilsAppState extends State<WeilsApp> {
     }
   }
 
+  /// 释放应用自行创建的依赖；外部注入的依赖由调用方管理。
   @override
   void dispose() {
     if (widget.dependencies == null) _dependencies.dispose();
     super.dispose();
   }
 
+  /// 注入共享依赖并创建使用统一主题的桌面应用入口。
   @override
   Widget build(BuildContext context) => MultiProvider(
     providers: appProviders(_dependencies),

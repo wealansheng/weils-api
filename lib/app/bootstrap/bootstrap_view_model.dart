@@ -13,5 +13,6 @@ class BootstrapViewModel extends RepositoryViewModel<_BootstrapState> {
   bool get ready => value.ready;
   bool get storageBlocked => value.blocked;
   WorkspaceNotice? get notice => value.notice;
+  /// 清除工作区当前提示，初始化和持久化状态仍由仓库维护。
   void dismissNotice() => repository.dismissNotice();
 }

@@ -36,10 +36,11 @@ import '../../features/mock/presentation/mock_sidebar.dart';
 import '../../features/mock/presentation/mock_workspace.dart';
 import '../../features/mock/presentation/view_models/mock_view_model.dart';
 
-/// Composition and navigation only; feature views own their display logic.
+/// 负责页面组合与导航，具体功能的展示逻辑由对应页面维护。
 class WorkspaceRoot extends StatefulWidget {
   const WorkspaceRoot({super.key, required this.userAgent});
   final String userAgent;
+  /// 创建工作区导航、搜索和窗口关闭协调所需的局部状态。
   @override
   State<WorkspaceRoot> createState() => _WorkspaceRootState();
 }
@@ -51,6 +52,7 @@ class _WorkspaceRootState extends State<WorkspaceRoot> {
   WorkspaceRepository get repository => context.read<WorkspaceRepository>();
   RequestExecutionViewModel get execution =>
       context.read<RequestExecutionViewModel>();
+  /// 注册原生窗口关闭监听，并连接退出协调器与应用级服务。
   @override
   void initState() {
     super.initState();
@@ -67,6 +69,7 @@ class _WorkspaceRootState extends State<WorkspaceRoot> {
     });
   }
 
+  /// 取消窗口事件订阅并释放搜索输入控制器。
   @override
   void dispose() {
     unawaited(_closeSubscription.cancel());
@@ -74,6 +77,7 @@ class _WorkspaceRootState extends State<WorkspaceRoot> {
     super.dispose();
   }
 
+  /// 切换接口管理或历史页面，同时清除搜索条件并恢复历史选中项。
   void _navigate(bool history) {
     _search.clear();
     context.read<LibraryViewModel>().search('');
@@ -84,6 +88,7 @@ class _WorkspaceRootState extends State<WorkspaceRoot> {
     );
   }
 
+  /// 根据当前页面新建普通请求或 Mock，并将普通请求切回编辑页面。
   void _newRequest() {
     if (context.read<AppNavigation>().destination == AppDestination.mock) {
       context.read<MockViewModel>().create();
@@ -93,6 +98,7 @@ class _WorkspaceRootState extends State<WorkspaceRoot> {
     _navigate(false);
   }
 
+  /// 将保存操作转发给当前页面的接口或 Mock 保存流程。
   void _save() {
     if (context.read<AppNavigation>().destination == AppDestination.mock) {
       unawaited(context.read<MockViewModel>().save());
@@ -102,6 +108,7 @@ class _WorkspaceRootState extends State<WorkspaceRoot> {
     if (active != null) unawaited(_close.save(active));
   }
 
+  /// 当前标签页正在执行时取消请求，否则尝试发送当前草稿。
   void _sendOrCancel() {
     final active = repository.state.snapshot.active;
     if (active == null) return;
@@ -112,6 +119,7 @@ class _WorkspaceRootState extends State<WorkspaceRoot> {
     }
   }
 
+  /// 组合桌面布局、功能页面和全局快捷键，并按当前导航与工作区状态刷新。
   @override
   Widget build(BuildContext context) {
     final destination = context.watch<AppNavigation>().destination;

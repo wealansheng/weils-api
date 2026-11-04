@@ -1,6 +1,7 @@
 import 'dart:convert';
 
-import '../../../../core/utils/identity.dart';
+import 'package:weils_api/core/utils/identity.dart';
+
 import 'entry.dart';
 
 enum RequestValidation {
@@ -17,6 +18,7 @@ class RequestSpec {
     this.name = '未命名接口',
     this.folderId = 'default',
     this.method = 'GET',
+    this.protocol = 'http',
     this.url = '',
     List<Entry> params = const [],
     List<Entry> headers = const [],
@@ -28,12 +30,15 @@ class RequestSpec {
        params = List.unmodifiable(params),
        headers = List.unmodifiable(headers);
   final String id, name, folderId, method, url, bodyType, body, authType, token;
+  final String protocol;
   final List<Entry> params, headers;
 
+  /// 复制请求配置；默认保留标识，历史重发等场景可要求生成新标识。
   RequestSpec copyWith({
     String? name,
     String? folderId,
     String? method,
+    String? protocol,
     String? url,
     List<Entry>? params,
     List<Entry>? headers,
@@ -47,6 +52,7 @@ class RequestSpec {
     name: name ?? this.name,
     folderId: folderId ?? this.folderId,
     method: method ?? this.method,
+    protocol: protocol ?? this.protocol,
     url: url ?? this.url,
     params: params ?? this.params,
     headers: headers ?? this.headers,
@@ -56,6 +62,7 @@ class RequestSpec {
     token: token ?? this.token,
   );
 
+  /// 合并 URL 与参数表，表中同名项覆盖原查询参数，保留重复启用值并移除片段。
   Uri get effectiveUri {
     final uri = Uri.parse(url.trim());
     final query = <String, List<String>>{
@@ -78,6 +85,7 @@ class RequestSpec {
     );
   }
 
+  /// 检查 URL、JSON 正文和 Header、Token 格式，返回首个错误；空值表示通过。
   RequestValidation? validate() {
     try {
       final uri = effectiveUri;
@@ -112,6 +120,7 @@ class RequestSpec {
       name == other.name &&
       folderId == other.folderId &&
       method == other.method &&
+      protocol == other.protocol &&
       url == other.url &&
       bodyType == other.bodyType &&
       body == other.body &&
@@ -125,6 +134,7 @@ class RequestSpec {
     name,
     folderId,
     method,
+    protocol,
     url,
     bodyType,
     body,

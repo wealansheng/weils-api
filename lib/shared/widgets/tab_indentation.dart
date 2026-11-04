@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-/// Inserts two spaces in an editor while leaving Shift+Tab for focus traversal.
+/// 为编辑器提供两空格缩进，Shift+Tab 继续用于焦点切换。
 class TabIndentation extends StatelessWidget {
   const TabIndentation({
     super.key,
@@ -14,6 +14,7 @@ class TabIndentation extends StatelessWidget {
   final ValueChanged<String> onChanged;
   final Widget child;
 
+  /// 用两个空格替换当前选区并移动光标，清除输入法组合区后通知正文更新。
   void _insertIndent() {
     final value = controller.value;
     final start = value.selection.isValid
@@ -30,6 +31,7 @@ class TabIndentation extends StatelessWidget {
     onChanged(controller.text);
   }
 
+  /// 拦截 Tab 键并执行两空格缩进，使多行编辑保持当前输入焦点。
   @override
   Widget build(BuildContext context) => CallbackShortcuts(
     bindings: {const SingleActivator(LogicalKeyboardKey.tab): _insertIndent},

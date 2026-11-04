@@ -1,8 +1,8 @@
 import 'dart:convert';
 import 'dart:io';
 
-import '../../../../core/errors/app_failure.dart';
-import '../../../../core/storage/atomic_json_file.dart';
+import 'package:weils_api/core/errors/app_failure.dart';
+import 'package:weils_api/core/storage/atomic_json_file.dart';
 import '../../domain/entities/workspace_snapshot.dart';
 import '../models/workspace_json.dart';
 import 'workspace_data_source.dart';
@@ -24,12 +24,14 @@ class LocalWorkspaceSource implements WorkspaceDataSource {
   Future<void> _tail = Future.value();
   File get file =>
       File('${directory.path}${Platform.pathSeparator}workspace.json');
+  /// 解析本地 JSON 并校验工作区版本与必要结构。
   Map<String, dynamic> _decode(String text) {
     final data = jsonDecode(text) as Map<String, dynamic>;
     WorkspaceJson.validate(data);
     return data;
   }
 
+  /// 先加载数据位置，再读取工作区；格式损坏时尝试备份恢复，读取异常交给上层处理。
   @override
   Future<Map<String, dynamic>?> read() async {
     await _loadLocation();
@@ -43,6 +45,7 @@ class LocalWorkspaceSource implements WorkspaceDataSource {
     }
   }
 
+  /// 首次访问时加载并校验目录指针，只接受存在的绝对路径。
   Future<void> _loadLocation() async {
     if (_locationLoaded) return;
     if (await locationFile.exists()) {
@@ -63,6 +66,7 @@ class LocalWorkspaceSource implements WorkspaceDataSource {
     _locationLoaded = true;
   }
 
+  /// 尝试读取有效备份，并将损坏主文件改名保留，记录本次恢复方式。
   Future<Map<String, dynamic>?> _recover() async {
     final backup = File('${file.path}.bak');
     Map<String, dynamic>? recovered;
@@ -70,7 +74,7 @@ class LocalWorkspaceSource implements WorkspaceDataSource {
       try {
         recovered = _decode(await backup.readAsString());
       } catch (_) {
-        /* Preserve invalid backups for manual recovery. */
+        /* 保留无效备份，便于后续手动恢复。 */
       }
     }
     await file.rename(
@@ -82,6 +86,7 @@ class LocalWorkspaceSource implements WorkspaceDataSource {
     return recovered;
   }
 
+  /// 立即编码当前快照，再按队列顺序原子写入，避免后续编辑改变待写数据。
   @override
   Future<void> write(Map<String, dynamic> data) {
     final encoded = jsonEncode(data);
@@ -91,6 +96,8 @@ class LocalWorkspaceSource implements WorkspaceDataSource {
     });
   }
 
+  /// 串行复制快照并切换目录指针，拒绝覆盖目标已有工作区；失败时清理未提交文件。
+  /// 指针提交成功后才更新内存目录，原目录数据保留。
   @override
   Future<void> relocate(String path, Map<String, dynamic> data) {
     final encoded = jsonEncode(data);
@@ -143,6 +150,7 @@ class LocalWorkspaceSource implements WorkspaceDataSource {
     });
   }
 
+  /// 串行执行磁盘操作；前一次失败不会阻断后续保存或迁移。
   Future<void> _enqueue(Future<void> Function() action) {
     final next = _tail.catchError((Object _) {}).then((_) => action());
     _tail = next;
