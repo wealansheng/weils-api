@@ -2,10 +2,9 @@ name: CI
 
 # 流程：push 到远程 dev
 #       → analyze + test（ubuntu）→ Windows 集成测试（windows）
-#       → 全部通过后自动把 dev 合并进 main（保留 dev 上的所有提交）
+#       → 全部通过后创建或复用 dev → main 的 PR，再通过 PR 合并
 #       任一环节失败，main 保持不动（不会半合进去）
 
-# 如果后面被卡住，把 continue-on-error: true 加回 windows-integration 并把它从 merge.needs 里删掉即可回到「只告警」模式
 on:
   push:
     branches:
@@ -127,7 +126,7 @@ jobs:
           retention-days: 7
 
   merge:
-    name: Merge dev into main
+    name: Create and merge dev PR into main
     # 必须等 analyze + test + windows-integration 全部通过；
     # 任一失败则本 job 直接跳过，main 保持不动
     needs: [analyze, test, windows-integration]
@@ -136,39 +135,58 @@ jobs:
     timeout-minutes: 10
     permissions:
       contents: write
+      pull-requests: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      VERIFIED_SHA: ${{ github.sha }}
     steps:
-      - name: Checkout main with full history
+      - name: Checkout verified commit with full history
         uses: actions/checkout@v4
         with:
-          ref: main
+          ref: ${{ github.sha }}
           fetch-depth: 0
 
-      - name: Configure git identity
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-
-      - name: Merge dev into main and push
+      - name: Create or reuse PR and merge verified commit
+        shell: bash
         run: |
           set -euo pipefail
           git fetch origin dev main
-          git checkout main
 
-          # 已是包含状态则什么都不做
-          if git merge-base --is-ancestor origin/dev HEAD; then
-            echo "dev 已经在 main 中，无需合并。"
+          # 新提交由后续 CI 验证，旧运行不能合并尚未检查的 dev 更新。
+          if [ "$(git rev-parse origin/dev)" != "$VERIFIED_SHA" ]; then
+            echo "dev 已更新，跳过本次合并，等待最新提交的 CI。"
             exit 0
           fi
 
-          # --no-ff：不做 squash，dev 上的每个提交都保留在 main 的历史里；
-          # 再把这一批提交逐条写进合并说明，便于在 main 上直接看清合并了哪些改动。
-          commits="$(git log --no-merges --format='- %s (%h)' origin/main..origin/dev)"
-          if [ -n "$commits" ]; then
-            git merge --no-ff origin/dev \
-              -m "merge: merge dev into main (auto, dev@${GITHUB_SHA::7})" \
-              -m "$commits"
-          else
-            git merge --no-ff origin/dev \
-              -m "merge: merge dev into main (auto, dev@${GITHUB_SHA::7})"
+          # 重跑已合并的提交时无需重复创建 PR。
+          if git merge-base --is-ancestor "$VERIFIED_SHA" origin/main; then
+            echo "本次验证的提交已在 main 中，无需合并。"
+            exit 0
           fi
-          git push origin main
+
+          # 只复用本仓库 dev → main 的开放 PR，排除同名 fork 分支。
+          pr_url="$(gh pr list --base main --head dev --state open \
+            --json url,isCrossRepository \
+            --jq '[.[] | select(.isCrossRepository == false)][0].url // empty')"
+          if [ -z "$pr_url" ]; then
+            body_file="$RUNNER_TEMP/dev-main-pr-body.md"
+            {
+              printf 'dev 分支的 CI 已全部通过，申请合并到 main。\n\n'
+              printf '检查：静态分析、单元与界面测试、Windows 集成测试（含 SSE）。\n\n'
+              printf 'CI：%s/%s/actions/runs/%s\n\n' \
+                "$GITHUB_SERVER_URL" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID"
+              printf '验证提交：`%s`\n\n提交列表：\n\n' "$VERIFIED_SHA"
+              git log --no-merges --format='- %s (%h)' "origin/main..$VERIFIED_SHA"
+            } > "$body_file"
+            pr_url="$(gh pr create --base main --head dev \
+              --title 'merge: dev into main' --body-file "$body_file")"
+          fi
+
+          printf 'PR：%s\n' "$pr_url"
+          printf 'dev → main PR：%s\n' "$pr_url" >> "$GITHUB_STEP_SUMMARY"
+
+          # 通过 GitHub 创建 merge commit，保留 dev 提交及分支。
+          # 合并请求再次校验头提交，阻止创建 PR 之后发生的分支更新被带入 main。
+          # 分支保护、必需审核或冲突会阻止合并，PR 保持开放供处理。
+          gh pr merge "$pr_url" --merge --match-head-commit "$VERIFIED_SHA"
