@@ -20,7 +20,7 @@ VS Code 可直接点击 `lib/main.dart` 上方的 Run / Debug，或按 F5 选择
 
 ## 界面截图
 
-界面截图由 `test/widget_test.dart` 和 `integration_test/windows_flow_test.dart` 生成在 `.impeccable/review/`。
+界面截图由 `test/app/workspace_flow_test.dart` 和 `integration_test/windows_flow_test.dart` 生成在 `.impeccable/review/`。
 
 - `home-1440.png`：空白工作区。
 - `editor-1440.png` / `editor-1280.png`：界面测试中的演示请求。
