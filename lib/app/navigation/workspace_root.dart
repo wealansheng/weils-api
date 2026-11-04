@@ -40,6 +40,7 @@ import '../../features/mock/presentation/view_models/mock_view_model.dart';
 class WorkspaceRoot extends StatefulWidget {
   const WorkspaceRoot({super.key, required this.userAgent});
   final String userAgent;
+
   /// 创建工作区导航、搜索和窗口关闭协调所需的局部状态。
   @override
   State<WorkspaceRoot> createState() => _WorkspaceRootState();
@@ -52,6 +53,7 @@ class _WorkspaceRootState extends State<WorkspaceRoot> {
   WorkspaceRepository get repository => context.read<WorkspaceRepository>();
   RequestExecutionViewModel get execution =>
       context.read<RequestExecutionViewModel>();
+
   /// 注册原生窗口关闭监听，并连接退出协调器与应用级服务。
   @override
   void initState() {
@@ -160,6 +162,7 @@ class _WorkspaceRootState extends State<WorkspaceRoot> {
               final history = context.read<HistoryViewModel>();
               final notice = workspaceNoticeMessage(bootstrap.notice);
               return AppShell(
+                key: ValueKey(bootstrap.workspaceRevision),
                 header: DesktopHeader(
                   onSettings: () => openSettings(
                     context,
@@ -167,6 +170,10 @@ class _WorkspaceRootState extends State<WorkspaceRoot> {
                       repository,
                       context.read<DesktopWindow>(),
                       UpdateWorkspaceSettings(repository),
+                      directoryChangeBlocked: () {
+                        final mock = context.read<MockViewModel>();
+                        return execution.running || mock.running || mock.busy;
+                      },
                     ),
                   ),
                 ),

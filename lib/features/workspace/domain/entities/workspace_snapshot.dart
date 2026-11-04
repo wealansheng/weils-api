@@ -50,16 +50,20 @@ class WorkspaceSnapshot {
   final int mockPort;
   MockDefinition? get activeMock =>
       mockDrafts.where((d) => d.id == mockActiveId).firstOrNull;
+
   /// 比较 Mock 草稿与同标识已保存定义，新建或内容变化均视为未保存。
   bool isMockDirty(MockDefinition draft) =>
       mocks.where((d) => d.id == draft.id).firstOrNull != draft;
   RequestSpec? get active => drafts.where((d) => d.id == activeId).firstOrNull;
+
   /// 比较请求草稿与同标识已保存接口，新建或内容变化均视为未保存。
   bool isDirty(RequestSpec draft) =>
       requests.where((r) => r.id == draft.id).firstOrNull != draft;
   bool get hasDirtyDrafts => drafts.any(isDirty) || mockDrafts.any(isMockDirty);
+
   /// 按标识查找已打开的请求草稿，未找到时返回空值。
   RequestSpec? draft(String id) => drafts.where((d) => d.id == id).firstOrNull;
+
   /// 复制不可变快照；可空选中项通过哨兵区分“沿用原值”与“显式清空”。
   WorkspaceSnapshot copyWith({
     List<Folder>? folders,
@@ -97,11 +101,16 @@ class WorkspaceState {
     this.ready = false,
     this.storageBlocked = false,
     this.notice,
+    this.workspaceRevision = 0,
   });
   final WorkspaceSnapshot snapshot;
   final String dataDirectory;
   final bool ready, storageBlocked;
   final WorkspaceNotice? notice;
+
+  /// 仅在加载另一份工作区数据时递增，用于清理界面缓存，不写入磁盘。
+  final int workspaceRevision;
+
   /// 复制工作区运行状态，notice 可显式传空以清除提示。
   WorkspaceState copyWith({
     WorkspaceSnapshot? snapshot,
@@ -109,6 +118,7 @@ class WorkspaceState {
     bool? ready,
     bool? storageBlocked,
     Object? notice = _unchanged,
+    int? workspaceRevision,
   }) => WorkspaceState(
     snapshot: snapshot ?? this.snapshot,
     dataDirectory: dataDirectory ?? this.dataDirectory,
@@ -117,5 +127,6 @@ class WorkspaceState {
     notice: identical(notice, _unchanged)
         ? this.notice
         : notice as WorkspaceNotice?,
+    workspaceRevision: workspaceRevision ?? this.workspaceRevision,
   );
 }

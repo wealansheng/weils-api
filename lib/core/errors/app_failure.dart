@@ -2,6 +2,7 @@ enum FailureCode {
   read,
   write,
   conflict,
+  busy,
   notFound,
   invalidData,
   connection,

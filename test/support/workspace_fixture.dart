@@ -120,6 +120,9 @@ class MemoryStorage implements WorkspaceDataSource {
   @override
   Future<void> relocate(String path, Map<String, dynamic> data) async =>
       write(data);
+  @override
+  Future<Map<String, dynamic>> openWorkspace(String path) async =>
+      throw const AppFailure(FailureCode.conflict);
 }
 
 class FailingStorage extends MemoryStorage {
@@ -141,13 +144,25 @@ class RelocatingMemoryStorage extends MemoryStorage {
   String? selectedPath;
   bool failRelocation = false;
   int relocations = 0;
+  Map<String, dynamic>? existingWorkspace;
   @override
   String get directoryPath => selectedPath ?? super.directoryPath;
   @override
   Future<void> relocate(String path, Map<String, dynamic> data) async {
-    if (failRelocation) throw const AppFailure(FailureCode.conflict);
+    if (failRelocation || existingWorkspace != null) {
+      throw const AppFailure(FailureCode.conflict);
+    }
     await write(data);
     selectedPath = path;
     relocations++;
+  }
+
+  @override
+  Future<Map<String, dynamic>> openWorkspace(String path) async {
+    final existing = existingWorkspace;
+    if (existing == null) throw const AppFailure(FailureCode.conflict);
+    data = existing;
+    selectedPath = path;
+    return existing;
   }
 }
